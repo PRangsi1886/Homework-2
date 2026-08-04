@@ -62,7 +62,10 @@ export class AudioBus {
   }
 
   shoot(weapon) {
-    if (weapon === "plasma") this.tone(220, 0.12, "sawtooth", 0.12, -80);
+    if (weapon === "rocket") {
+      this.tone(140, 0.16, "sawtooth", 0.14, -50);
+      this.noise(0.12, 0.08);
+    } else if (weapon === "plasma") this.tone(220, 0.12, "sawtooth", 0.12, -80);
     else if (weapon === "ion") this.tone(880, 0.08, "triangle", 0.1, 200);
     else this.tone(640, 0.05, "square", 0.06, -120);
   }

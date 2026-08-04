@@ -13,6 +13,7 @@ import {
   spawnPowerup,
   spawnPickupAmmo,
 } from "./entities.js";
+import { getSprites, drawSprite } from "./sprites.js";
 
 const STATES = {
   TITLE: "title",
@@ -41,6 +42,7 @@ export class Game {
     this.selfDestructArmed = 0;
     this.message = null;
     this.cutscene = null;
+    this.sprites = getSprites();
     this.bindUi();
     this.bindInput();
     this.resetRun();
@@ -65,6 +67,7 @@ export class Game {
       ammoGun: document.getElementById("ammo-gun"),
       ammoIon: document.getElementById("ammo-ion"),
       ammoPlasma: document.getElementById("ammo-plasma"),
+      ammoRocket: document.getElementById("ammo-rocket"),
       finalScore: document.getElementById("final-score"),
       finalLevel: document.getElementById("final-level"),
       victoryScore: document.getElementById("victory-score"),
@@ -101,6 +104,7 @@ export class Game {
       if (e.code === "Digit1") this.setWeapon("gun");
       if (e.code === "Digit2") this.setWeapon("ion");
       if (e.code === "Digit3") this.setWeapon("plasma");
+      if (e.code === "Digit4") this.setWeapon("rocket");
       if (e.code === "KeyP" || e.code === "Escape") this.togglePause();
       if (e.code === "Digit0" || e.code === "Enter" || e.code === "Numpad0") {
         this.armSelfDestruct();
@@ -288,6 +292,7 @@ export class Game {
     const ejected = spawnPickupAmmo(p.x, p.y - 20, {
       ion: p.ammo.ion,
       plasma: p.ammo.plasma,
+      rocket: p.ammo.rocket,
       gun: 0,
     });
     this.powerups.push(ejected);
@@ -463,6 +468,7 @@ export class Game {
     this.player.shield = Math.min(100, this.player.shield + 25);
     this.player.ammo.ion += 12;
     this.player.ammo.plasma += 8;
+    this.player.ammo.rocket += 4;
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
@@ -528,18 +534,40 @@ export class Game {
     }
     p.fireCd = def.rate;
 
+    if (weapon === "rocket") {
+      this.bullets.push({
+        x: p.x,
+        y: p.y - 28,
+        w: 14,
+        h: 28,
+        vy: -def.speed,
+        vx: 0,
+        damage: def.damage,
+        pierce: false,
+        splash: def.splash,
+        splashDamage: def.splashDamage,
+        homing: def.homing,
+        color: def.color,
+        life: 2.2,
+        weapon,
+      });
+      this.audio.shoot("rocket");
+      return;
+    }
+
     const spread = weapon === "plasma" ? 2 : weapon === "gun" ? 1 : 0;
     for (let i = -spread; i <= spread; i++) {
       if (spread && i === 0 && weapon === "plasma") continue;
       this.bullets.push({
         x: p.x + i * 10,
         y: p.y - 24,
-        w: weapon === "plasma" ? 10 : 5,
-        h: weapon === "plasma" ? 16 : 14,
+        w: weapon === "plasma" ? 12 : weapon === "ion" ? 8 : 6,
+        h: weapon === "plasma" ? 22 : weapon === "ion" ? 28 : 16,
         vy: -def.speed,
         vx: i * 40,
         damage: def.damage,
         pierce: def.pierce,
+        splash: 0,
         color: def.color,
         life: 1.4,
         weapon,
@@ -550,9 +578,41 @@ export class Game {
 
   updateBullets(dt) {
     for (const b of this.bullets) {
+      if (b.homing && b.weapon === "rocket") {
+        let best = null;
+        let bestD = Infinity;
+        for (const e of this.enemies) {
+          if (e.hp <= 0) continue;
+          const d = Math.hypot(e.x - b.x, e.y - b.y);
+          if (d < bestD && e.y < b.y + 40) {
+            bestD = d;
+            best = e;
+          }
+        }
+        if (best) {
+          const ang = Math.atan2(best.y - b.y, best.x - b.x);
+          const speed = Math.hypot(b.vx || 0, b.vy);
+          const tx = Math.cos(ang) * speed;
+          const ty = Math.sin(ang) * speed;
+          b.vx = (b.vx || 0) + (tx - (b.vx || 0)) * Math.min(1, b.homing * dt * 0.01);
+          b.vy = b.vy + (ty - b.vy) * Math.min(1, b.homing * dt * 0.01);
+        }
+      }
       b.x += (b.vx || 0) * dt;
       b.y += b.vy * dt;
       b.life -= dt;
+      if (b.weapon === "rocket") {
+        this.particles.push({
+          x: b.x + (Math.random() - 0.5) * 4,
+          y: b.y + 10,
+          vx: (Math.random() - 0.5) * 20,
+          vy: 40 + Math.random() * 30,
+          life: 0.18,
+          max: 0.18,
+          color: Math.random() > 0.5 ? "#ffb040" : "#ff6a30",
+          size: 1.5 + Math.random() * 2,
+        });
+      }
     }
     this.bullets = this.bullets.filter((b) => b.life > 0 && b.y > -40 && b.y < H + 40);
 
@@ -566,16 +626,22 @@ export class Game {
 
   updateEnemies(dt) {
     const survivors = [];
+    this.pendingSpawns = [];
     for (const e of this.enemies) {
       e.age += dt;
       if (e.flash > 0) e.flash -= dt;
       this.moveEnemy(e, dt);
 
-      if (e.fireRate > 0 && e.y > 20 && e.y < H - 80) {
+      if (e.type === "boss" && e.final && e.entered) {
+        this.updateFinalBoss(e, dt);
+      }
+
+      if (e.fireRate > 0 && e.y > 20 && e.y < H - 80 && e.charging <= 0) {
         e.fireCd -= dt;
         if (e.fireCd <= 0) {
           this.enemyShoot(e);
-          e.fireCd = e.fireRate * (0.75 + Math.random() * 0.5);
+          const haste = e.final ? Math.max(0.55, 1.1 - e.bossPhase * 0.18) : 1;
+          e.fireCd = e.fireRate * (0.7 + Math.random() * 0.45) * haste;
         }
       }
 
@@ -585,7 +651,62 @@ export class Game {
       }
       if (e.hp > 0) survivors.push(e);
     }
-    this.enemies = survivors;
+    this.enemies = survivors.concat(this.pendingSpawns);
+    this.pendingSpawns = [];
+  }
+
+  updateFinalBoss(e, dt) {
+    const ratio = e.hp / e.maxHp;
+    e.bossPhase = ratio > 0.66 ? 1 : ratio > 0.33 ? 2 : 3;
+
+    e.specialCd -= dt;
+    e.spawnCd -= dt;
+    e.chargeCd -= dt;
+
+    if (e.specialCd <= 0) {
+      this.finalBossRing(e, e.bossPhase >= 3 ? 18 : 12);
+      e.specialCd = e.bossPhase === 1 ? 3.2 : e.bossPhase === 2 ? 2.4 : 1.7;
+    }
+
+    if (e.spawnCd <= 0 && e.bossPhase >= 2) {
+      const n = e.bossPhase === 3 ? 4 : 2;
+      for (let i = 0; i < n; i++) {
+        const type = Math.random() > 0.5 ? "dart" : "scout";
+        this.pendingSpawns.push(
+          spawnEnemy(type, e.x + (i - (n - 1) / 2) * 40, e.y + 30, this.level)
+        );
+      }
+      this.flashMessage("COMMANDER DEPLOYS ESCORTS", 1);
+      e.spawnCd = e.bossPhase === 3 ? 4.5 : 6;
+      this.audio.alert();
+    }
+
+    if (e.chargeCd <= 0 && e.bossPhase >= 2 && e.charging <= 0) {
+      const ang = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+      e.charging = 0.85;
+      e.chargeVx = Math.cos(ang) * 420;
+      e.chargeVy = Math.sin(ang) * 420;
+      e.chargeCd = e.bossPhase === 3 ? 3.2 : 4.8;
+      this.flashMessage("INCOMING CHARGE", 0.8);
+    }
+  }
+
+  finalBossRing(e, count) {
+    for (let i = 0; i < count; i++) {
+      const a = (Math.PI * 2 * i) / count + e.phase;
+      this.enemyBullets.push({
+        x: e.x,
+        y: e.y,
+        w: 8,
+        h: 8,
+        vx: Math.cos(a) * (220 + e.bossPhase * 30),
+        vy: Math.sin(a) * (220 + e.bossPhase * 30),
+        damage: 16,
+        color: "#ffb020",
+        life: 3.5,
+        heavy: true,
+      });
+    }
   }
 
   moveEnemy(e, dt) {
@@ -600,9 +721,25 @@ export class Game {
         return;
       }
       e.phase += dt;
+
+      if (e.final && e.charging > 0) {
+        e.charging -= dt;
+        e.x += e.chargeVx * dt;
+        e.y += e.chargeVy * dt;
+        e.x = clamp(e.x, 50, W - 50);
+        e.y = clamp(e.y, 80, H * 0.55);
+        if (e.charging <= 0) {
+          e.chargeVx = 0;
+          e.chargeVy = 0;
+        }
+        return;
+      }
+
       if (e.final) {
-        e.x = W / 2 + Math.sin(e.phase * 1.15) * (W * 0.34);
-        e.y = holdY + Math.sin(e.phase * 2.1) * 28;
+        const amp = e.bossPhase === 3 ? 0.4 : 0.34;
+        const speed = e.bossPhase === 3 ? 1.45 : 1.15;
+        e.x = W / 2 + Math.sin(e.phase * speed) * (W * amp);
+        e.y = holdY + Math.sin(e.phase * 2.1) * (e.bossPhase === 3 ? 40 : 28);
       } else {
         e.x = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
         e.y = holdY + Math.sin(e.phase * 1.7) * 18;
@@ -628,36 +765,75 @@ export class Game {
 
   enemyShoot(e) {
     const aim = Math.atan2(this.player.y - e.y, this.player.x - e.x);
-    const shots = e.final ? 7 : e.type === "boss" ? 5 : e.type === "heavy" ? 3 : 1;
-    const spread = e.final ? 0.22 : 0.18;
+    if (e.final) {
+      const phase = e.bossPhase || 1;
+      const shots = 5 + phase * 2;
+      const spread = 0.14 + phase * 0.03;
+      for (let i = 0; i < shots; i++) {
+        const a = aim + (i - (shots - 1) / 2) * spread;
+        this.enemyBullets.push({
+          x: e.x,
+          y: e.y + e.h / 2,
+          w: 8,
+          h: 8,
+          vx: Math.cos(a) * e.bulletSpeed,
+          vy: Math.sin(a) * e.bulletSpeed,
+          damage: 18,
+          color: "#ffb020",
+          life: 3.2,
+          heavy: true,
+        });
+      }
+      if (phase >= 2) {
+        for (let i = 0; i < 8; i++) {
+          const a = e.phase * 2.5 + (Math.PI * 2 * i) / 8;
+          this.enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            w: 7,
+            h: 7,
+            vx: Math.cos(a) * 240,
+            vy: Math.sin(a) * 240,
+            damage: 14,
+            color: "#ff5a6e",
+            life: 3,
+          });
+        }
+      }
+      if (phase >= 3 && Math.random() < 0.6) {
+        for (let i = -3; i <= 3; i++) {
+          this.enemyBullets.push({
+            x: e.x + i * 22,
+            y: e.y + e.h / 2,
+            w: 7,
+            h: 12,
+            vx: i * 18,
+            vy: e.bulletSpeed * 0.95,
+            damage: 16,
+            color: "#ff7b8a",
+            life: 3,
+          });
+        }
+      }
+      return;
+    }
+
+    const shots = e.type === "boss" ? 5 : e.type === "heavy" ? 3 : 1;
+    const spread = 0.18;
     for (let i = 0; i < shots; i++) {
       const a = aim + (i - (shots - 1) / 2) * spread;
       this.enemyBullets.push({
         x: e.x,
         y: e.y + e.h / 2,
-        w: 6,
-        h: 10,
+        w: 7,
+        h: 7,
         vx: Math.cos(a) * e.bulletSpeed,
         vy: Math.sin(a) * e.bulletSpeed,
-        damage: e.final ? 18 : e.type === "boss" ? 16 : 12,
-        color: e.final ? "#ffb020" : "#ff7b8a",
+        damage: e.type === "boss" ? 16 : 12,
+        color: "#ff7b8a",
         life: 3,
+        heavy: e.type === "heavy" || e.type === "boss",
       });
-    }
-    if (e.final && Math.random() < 0.45) {
-      for (let i = -2; i <= 2; i++) {
-        this.enemyBullets.push({
-          x: e.x + i * 18,
-          y: e.y + e.h / 2,
-          w: 6,
-          h: 12,
-          vx: i * 30,
-          vy: e.bulletSpeed * 0.85,
-          damage: 14,
-          color: "#ff5a6e",
-          life: 3,
-        });
-      }
     }
   }
 
@@ -702,7 +878,8 @@ export class Game {
         if (!aabb(b, e)) continue;
         e.hp -= b.damage;
         e.flash = 0.08;
-        this.burst(b.x, b.y, b.color, 4, 80);
+        this.burst(b.x, b.y, b.color, b.weapon === "rocket" ? 18 : 4, b.weapon === "rocket" ? 200 : 80);
+        if (b.splash) this.applySplash(b, e);
         if (!b.pierce) b.spent = true;
         if (e.hp <= 0) this.killEnemy(e);
         if (!b.pierce) break;
@@ -744,6 +921,22 @@ export class Game {
     this.powerups = left;
   }
 
+  applySplash(b, primary) {
+    const r = b.splash;
+    for (const e of this.enemies) {
+      if (e === primary || e.hp <= 0) continue;
+      const d = Math.hypot(e.x - b.x, e.y - b.y);
+      if (d <= r) {
+        const falloff = 1 - d / r;
+        e.hp -= (b.splashDamage || b.damage * 0.5) * falloff;
+        e.flash = 0.1;
+        if (e.hp <= 0) this.killEnemy(e);
+      }
+    }
+    this.shake = Math.max(this.shake, 6);
+    this.audio.explosion(false);
+  }
+
   killEnemy(e, fromSuicide = false) {
     if (e._dead) return;
     e._dead = true;
@@ -755,8 +948,9 @@ export class Game {
       this.levelKills += 1;
       this.combo += 1;
       if (Math.random() < 0.14 + Math.min(0.1, this.combo * 0.01)) {
-        const types = ["shield", "repair", "super"];
-        const type = types[(Math.random() * (this.level >= 2 ? 3 : 2)) | 0];
+        const types = ["shield", "repair", "super", "rocket"];
+        const max = this.level >= 2 ? 4 : 3;
+        const type = types[(Math.random() * max) | 0];
         this.powerups.push(spawnPowerup(type, e.x, e.y));
       }
       if (Math.random() < 0.08) {
@@ -764,9 +958,12 @@ export class Game {
           spawnPickupAmmo(e.x, e.y, {
             ion: 8 + ((Math.random() * 8) | 0),
             plasma: 4 + ((Math.random() * 6) | 0),
+            rocket: 2 + ((Math.random() * 3) | 0),
             gun: 0,
           })
         );
+      } else if (Math.random() < 0.06) {
+        this.powerups.push(spawnPowerup("rocket", e.x, e.y));
       }
     }
     if (e.type === "boss" && !fromSuicide) this.defeatBoss();
@@ -806,6 +1003,7 @@ export class Game {
     if (up.type === "ammo") {
       this.player.ammo.ion += up.ammo.ion || 0;
       this.player.ammo.plasma += up.ammo.plasma || 0;
+      this.player.ammo.rocket += up.ammo.rocket || 0;
       this.flashMessage("AMMO RECOVERED", 1);
       return;
     }
@@ -819,6 +1017,9 @@ export class Game {
       this.player.shield = 100;
       this.player.invuln = 4;
       this.flashMessage("SUPER SHIELDS", 1.2);
+    } else if (up.type === "rocket") {
+      this.player.ammo.rocket += up.rockets || 4;
+      this.flashMessage("+ROCKETS", 1);
     }
   }
 
@@ -853,16 +1054,22 @@ export class Game {
     // respawn fighter — strategic launch burst clears nearby enemies
     const oldAmmo = fromSuicide
       ? null
-      : { ion: Math.floor(this.player.ammo.ion * 0.5), plasma: Math.floor(this.player.ammo.plasma * 0.5) };
+      : {
+          ion: Math.floor(this.player.ammo.ion * 0.5),
+          plasma: Math.floor(this.player.ammo.plasma * 0.5),
+          rocket: Math.floor(this.player.ammo.rocket * 0.5),
+        };
 
     this.player = createPlayer();
     if (oldAmmo) {
       this.player.ammo.ion = oldAmmo.ion;
       this.player.ammo.plasma = oldAmmo.plasma;
+      this.player.ammo.rocket = oldAmmo.rocket;
     } else {
       // next fighter will pick up ejected ammo pod; start with reserve
       this.player.ammo.ion = 10;
       this.player.ammo.plasma = 6;
+      this.player.ammo.rocket = 3;
     }
     this.player.invuln = 2.2;
     this.audio.launch();
@@ -918,6 +1125,7 @@ export class Game {
     this.ui.ammoGun.textContent = "∞";
     this.ui.ammoIon.textContent = String(p.ammo.ion);
     this.ui.ammoPlasma.textContent = String(p.ammo.plasma);
+    if (this.ui.ammoRocket) this.ui.ammoRocket.textContent = String(p.ammo.rocket);
     for (const el of document.querySelectorAll(".ammo")) {
       el.classList.toggle("active", el.dataset.weapon === p.weapon);
     }
@@ -1012,139 +1220,87 @@ export class Game {
     const t = performance.now() * 0.001;
     const x = W / 2 + Math.sin(t * 0.8) * 30;
     const y = H * 0.58 + Math.cos(t * 1.1) * 10;
-    this.drawShip(ctx, x, y, "#3ef0d0", 1 + Math.sin(t * 4) * 0.03);
+    const s = 1 + Math.sin(t * 4) * 0.03;
+    drawSprite(ctx, this.sprites.hero, x, y, 64 * s, 64 * s);
   }
 
   drawPlayer(ctx) {
     const p = this.player;
     for (const t of p.trail) {
       if (t.life <= 0) continue;
-      ctx.globalAlpha = t.life * 0.8;
-      ctx.fillStyle = "#3ef0d0";
+      ctx.globalAlpha = t.life * 0.7;
+      ctx.fillStyle = "#7ec8ff";
       ctx.beginPath();
       ctx.arc(t.x, t.y, 3, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
-    if (!blink) this.drawShip(ctx, p.x, p.y, p.invuln > 1.5 ? "#fff2aa" : "#3ef0d0", 1);
-  }
-
-  drawShip(ctx, x, y, color, scale = 1) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0, -26);
-    ctx.lineTo(18, 18);
-    ctx.lineTo(6, 12);
-    ctx.lineTo(0, 20);
-    ctx.lineTo(-6, 12);
-    ctx.lineTo(-18, 18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "rgba(5,8,15,0.55)";
-    ctx.beginPath();
-    ctx.moveTo(0, -10);
-    ctx.lineTo(6, 6);
-    ctx.lineTo(-6, 6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#f0a23a";
-    ctx.fillRect(-3, 18, 6, 8);
-    ctx.restore();
+    if (!blink) {
+      drawSprite(ctx, this.sprites.hero, p.x, p.y, 56, 56, {
+        flash: p.invuln > 1.5,
+      });
+    }
   }
 
   drawEnemies(ctx) {
     for (const e of this.enemies) {
-      ctx.save();
-      ctx.translate(e.x, e.y);
-      if (e.flash > 0) ctx.globalAlpha = 0.55;
+      let img = this.sprites[e.type] || this.sprites.scout;
+      let w = e.w * 1.35;
+      let h = e.h * 1.35;
       if (e.type === "boss") {
-        const s = e.final ? 1.25 : 1;
-        ctx.fillStyle = e.color;
-        ctx.beginPath();
-        ctx.moveTo(0, 40 * s);
-        ctx.lineTo(55 * s, 10 * s);
-        ctx.lineTo(40 * s, -35 * s);
-        ctx.lineTo(0, -20 * s);
-        ctx.lineTo(-40 * s, -35 * s);
-        ctx.lineTo(-55 * s, 10 * s);
-        ctx.closePath();
-        ctx.fill();
-        if (e.final) {
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.fillStyle = "#3a2208";
-          ctx.fillRect(-24, -10, 48, 22);
-          ctx.fillStyle = "#fff2cc";
-          ctx.fillRect(-14, -3, 28, 8);
-        } else {
-          ctx.fillStyle = "#1a0b12";
-          ctx.fillRect(-18, -8, 36, 18);
-          ctx.fillStyle = "#ffd0d8";
-          ctx.fillRect(-10, -2, 20, 6);
-        }
-      } else {
-        ctx.fillStyle = e.color;
-        ctx.beginPath();
-        ctx.moveTo(0, 16);
-        ctx.lineTo(e.w / 2, -10);
-        ctx.lineTo(0, -16);
-        ctx.lineTo(-e.w / 2, -10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "rgba(0,0,0,0.35)";
-        ctx.fillRect(-6, -4, 12, 8);
+        img = e.final ? this.sprites.finalBoss : this.sprites.boss;
+        w = e.w * 1.15;
+        h = e.h * 1.15;
       }
-      // tiny hp tick
+      drawSprite(ctx, img, e.x, e.y, w, h, { flash: e.flash > 0 });
       if (e.hp < e.maxHp && e.type !== "boss") {
         ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(-16, -e.h / 2 - 8, 32, 3);
+        ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32, 3);
         ctx.fillStyle = "#9ef7ff";
-        ctx.fillRect(-16, -e.h / 2 - 8, 32 * (e.hp / e.maxHp), 3);
+        ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32 * (e.hp / e.maxHp), 3);
       }
-      ctx.restore();
     }
   }
 
   drawBullets(ctx) {
     for (const b of this.bullets) {
-      ctx.fillStyle = b.color;
-      if (b.weapon === "ion") {
-        ctx.fillRect(b.x - 2, b.y - 18, 4, 36);
+      const img =
+        b.weapon === "rocket"
+          ? this.sprites.rocket
+          : b.weapon === "ion"
+            ? this.sprites.ion
+            : b.weapon === "plasma"
+              ? this.sprites.plasma
+              : this.sprites.gun;
+      if (b.weapon === "rocket") {
+        const ang = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(ang);
+        ctx.drawImage(img, -b.w / 2, -b.h / 2, b.w, b.h);
+        ctx.restore();
       } else {
-        ctx.beginPath();
-        ctx.ellipse(b.x, b.y, b.w / 2, b.h / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
+        drawSprite(ctx, img, b.x, b.y, b.w + 4, b.h + 4);
       }
     }
     for (const b of this.enemyBullets) {
-      ctx.fillStyle = b.color;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-      ctx.fill();
+      const img = b.heavy ? this.sprites.enemyBulletHeavy : this.sprites.enemyBullet;
+      drawSprite(ctx, img, b.x, b.y, b.w + 4, b.h + 4);
     }
   }
 
   drawPowerups(ctx) {
     for (const p of this.powerups) {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.strokeStyle = p.color;
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.rect(-14, -14, 28, 28);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = p.color;
-      ctx.font = "700 9px Orbitron";
-      ctx.textAlign = "center";
-      ctx.fillText(p.label.slice(0, 3), 0, 3);
-      ctx.restore();
+      const map = {
+        shield: this.sprites.powerShield,
+        repair: this.sprites.powerRepair,
+        super: this.sprites.powerSuper,
+        ammo: this.sprites.powerAmmo,
+        rocket: this.sprites.powerRocket,
+      };
+      const img = map[p.type] || this.sprites.powerAmmo;
+      drawSprite(ctx, img, p.x, p.y, 32, 32);
     }
   }
 }
