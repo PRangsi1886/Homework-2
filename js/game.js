@@ -190,12 +190,14 @@ export class Game {
 
   beginIntroCutscene() {
     this.cutscene = createIntroCutscene(() => this.beginGameplay());
+    this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
     this.showScreen("cutscene");
   }
 
   beginVictoryCutscene() {
     this.cutscene = createVictoryCutscene(this.score, () => this.showVictory());
+    this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
     this.showScreen("cutscene");
   }
@@ -218,6 +220,8 @@ export class Game {
 
   skipCutscene() {
     if (this.state !== STATES.CUTSCENE || !this.cutscene) return;
+    // Ignore the same click that pressed Launch Sortie
+    if (performance.now() - (this.cutsceneStartedAt || 0) < 450) return;
     this.cutscene.skip();
   }
 
@@ -839,11 +843,8 @@ export class Game {
 
   enemyEscaped(e) {
     if (e.type === "boss") return;
-    this.audio.alert();
-    this.shake = 10;
-    this.flashMessage("HOSTILE ESCAPED — FIGHTER LOST", 1.4);
-    this.burst(e.x, H - 10, "#ff5a6e", 18, 160);
-    this.loseLife(false);
+    this.burst(e.x, H - 10, "#ff5a6e", 10, 120);
+    // Enemies that slip past simply leave — no fighter penalty
   }
 
   updatePowerups(dt) {

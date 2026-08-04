@@ -2,7 +2,7 @@
 
 Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu).
 
-You command robotic fighters escorting a freighter across **four sectors**. Destroy every hostile before they cross the freighter line. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. Animated cutscenes play before sector 1 and after the final victory.
+You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. An animated cutscene plays after Launch Sortie, and another after the final victory.
 
 ## Play
 
@@ -27,7 +27,6 @@ Then visit `http://localhost:8080`.
 
 ## Signature mechanics (Chromium B.S.U.–style)
 
-- **No escapes** — enemies that pass the bottom cost a fighter.
 - **Ramming** — collisions damage both ships.
 - **Limited special ammo** — ion pierces; plasma hits hard and spends fast.
 - **Strategic suicide** — self-destruct clears the screen and ejects ammo for the next fighter.
