@@ -2,7 +2,7 @@
 
 Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu).
 
-You command robotic fighters escorting a freighter. Destroy every hostile before they cross the freighter line at the bottom of the screen.
+You command robotic fighters escorting a freighter across **four sectors**. Destroy every hostile before they cross the freighter line. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. Animated cutscenes play before sector 1 and after the final victory.
 
 ## Play
 

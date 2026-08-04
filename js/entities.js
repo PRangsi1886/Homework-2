@@ -110,21 +110,26 @@ export function spawnEnemy(type, x, y, level) {
   };
 }
 
+export const MAX_LEVEL = 4;
+
 export function spawnBoss(level) {
+  const final = level >= MAX_LEVEL;
+  const hp = final ? 2400 + level * 200 : 900 + level * 280;
   return {
     type: "boss",
+    final,
     x: W / 2,
     y: -80,
-    w: 120,
-    h: 90,
-    hp: 900 + level * 280,
-    maxHp: 900 + level * 280,
-    speed: 55,
-    score: 4000 + level * 1000,
-    color: "#ff4d6a",
-    fireRate: 0.45,
-    bulletSpeed: 280,
-    pattern: "boss",
+    w: final ? 150 : 120,
+    h: final ? 110 : 90,
+    hp,
+    maxHp: hp,
+    speed: final ? 70 : 55,
+    score: final ? 12000 : 4000 + level * 1000,
+    color: final ? "#ffb020" : "#ff4d6a",
+    fireRate: final ? 0.32 : 0.45,
+    bulletSpeed: final ? 320 : 280,
+    pattern: final ? "finalBoss" : "boss",
     fireCd: 1,
     phase: 0,
     age: 0,

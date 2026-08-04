@@ -1,4 +1,5 @@
 import { AudioBus } from "./audio.js";
+import { createIntroCutscene, createVictoryCutscene } from "./cutscenes.js";
 import {
   W,
   H,
@@ -6,6 +7,7 @@ import {
   aabb,
   createPlayer,
   WEAPONS,
+  MAX_LEVEL,
   spawnEnemy,
   spawnBoss,
   spawnPowerup,
@@ -14,10 +16,12 @@ import {
 
 const STATES = {
   TITLE: "title",
+  CUTSCENE: "cutscene",
   PLAYING: "playing",
   PAUSED: "paused",
   LEVEL_CLEAR: "levelclear",
   GAME_OVER: "gameover",
+  VICTORY: "victory",
 };
 
 export class Game {
@@ -36,6 +40,7 @@ export class Game {
     this.shake = 0;
     this.selfDestructArmed = 0;
     this.message = null;
+    this.cutscene = null;
     this.bindUi();
     this.bindInput();
     this.resetRun();
@@ -47,8 +52,10 @@ export class Game {
       hud: document.getElementById("hud"),
       title: document.getElementById("title-screen"),
       briefing: document.getElementById("briefing-screen"),
+      cutscene: document.getElementById("cutscene-screen"),
       pause: document.getElementById("pause-screen"),
       gameover: document.getElementById("gameover-screen"),
+      victory: document.getElementById("victory-screen"),
       levelclear: document.getElementById("levelclear-screen"),
       score: document.getElementById("hud-score"),
       level: document.getElementById("hud-level"),
@@ -60,13 +67,16 @@ export class Game {
       ammoPlasma: document.getElementById("ammo-plasma"),
       finalScore: document.getElementById("final-score"),
       finalLevel: document.getElementById("final-level"),
+      victoryScore: document.getElementById("victory-score"),
       levelClearTitle: document.getElementById("level-clear-title"),
       levelClearSub: document.getElementById("level-clear-sub"),
     };
 
     document.getElementById("btn-start").addEventListener("click", () => this.startGame());
     document.getElementById("btn-restart").addEventListener("click", () => this.startGame());
+    document.getElementById("btn-victory-restart").addEventListener("click", () => this.startGame());
     document.getElementById("btn-resume").addEventListener("click", () => this.resume());
+    document.getElementById("btn-skip-cutscene").addEventListener("click", () => this.skipCutscene());
     document.getElementById("btn-how").addEventListener("click", () => {
       this.ui.title.classList.add("hidden");
       this.ui.briefing.classList.remove("hidden");
@@ -83,6 +93,11 @@ export class Game {
         e.preventDefault();
       }
       this.keys.add(e.code);
+      if (this.state === STATES.CUTSCENE && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) {
+        e.preventDefault();
+        this.skipCutscene();
+        return;
+      }
       if (e.code === "Digit1") this.setWeapon("gun");
       if (e.code === "Digit2") this.setWeapon("ion");
       if (e.code === "Digit3") this.setWeapon("plasma");
@@ -109,6 +124,10 @@ export class Game {
     });
     this.canvas.addEventListener("pointerdown", (e) => {
       this.audio.unlock();
+      if (this.state === STATES.CUTSCENE) {
+        this.skipCutscene();
+        return;
+      }
       if (e.button === 0) this.mouse.down = true;
       if (e.button === 2) {
         e.preventDefault();
@@ -162,23 +181,56 @@ export class Game {
     this.audio.unlock();
     this.audio.launch();
     this.resetRun();
+    this.beginIntroCutscene();
+  }
+
+  beginIntroCutscene() {
+    this.cutscene = createIntroCutscene(() => this.beginGameplay());
+    this.state = STATES.CUTSCENE;
+    this.showScreen("cutscene");
+  }
+
+  beginVictoryCutscene() {
+    this.cutscene = createVictoryCutscene(this.score, () => this.showVictory());
+    this.state = STATES.CUTSCENE;
+    this.showScreen("cutscene");
+  }
+
+  beginGameplay() {
+    this.cutscene = null;
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
     this.flashMessage("FIGHTER DEPLOYED", 1.4);
+    this.audio.launch();
+  }
+
+  showVictory() {
+    this.cutscene = null;
+    this.state = STATES.VICTORY;
+    this.ui.victoryScore.textContent = String(this.score);
+    this.showScreen("victory");
+  }
+
+  skipCutscene() {
+    if (this.state !== STATES.CUTSCENE || !this.cutscene) return;
+    this.cutscene.skip();
   }
 
   showScreen(mode) {
-    const { hud, title, briefing, pause, gameover, levelclear } = this.ui;
+    const { hud, title, briefing, cutscene, pause, gameover, victory, levelclear } = this.ui;
     title.classList.add("hidden");
     briefing.classList.add("hidden");
+    cutscene.classList.add("hidden");
     pause.classList.add("hidden");
     gameover.classList.add("hidden");
+    victory.classList.add("hidden");
     levelclear.classList.add("hidden");
     hud.classList.add("hidden");
 
     if (mode === "playing") hud.classList.remove("hidden");
     if (mode === "title") title.classList.remove("hidden");
+    if (mode === "cutscene") cutscene.classList.remove("hidden");
     if (mode === "pause") {
       hud.classList.remove("hidden");
       pause.classList.remove("hidden");
@@ -188,6 +240,7 @@ export class Game {
       this.ui.finalLevel.textContent = String(this.level);
       gameover.classList.remove("hidden");
     }
+    if (mode === "victory") victory.classList.remove("hidden");
     if (mode === "levelclear") {
       hud.classList.remove("hidden");
       levelclear.classList.remove("hidden");
@@ -279,16 +332,19 @@ export class Game {
     this.levelKills = 0;
 
     const waves = [];
-    const base = 3 + this.level;
-    for (let w = 0; w < 4 + Math.min(3, this.level); w++) {
+    const isFinal = this.level >= MAX_LEVEL;
+    const waveCount = isFinal ? 8 : 4 + Math.min(3, this.level);
+    const base = 3 + this.level + (isFinal ? 2 : 0);
+    for (let w = 0; w < waveCount; w++) {
       const pack = [];
       const count = base + w;
       for (let i = 0; i < count; i++) {
         let type = "scout";
         const roll = Math.random();
         if (this.level >= 2 && roll > 0.55) type = "lancer";
-        if (this.level >= 3 && roll > 0.78) type = "heavy";
-        if (roll > 0.88) type = "dart";
+        if (this.level >= 3 && roll > 0.75) type = "heavy";
+        if (isFinal && roll > 0.6) type = "heavy";
+        if (roll > 0.88 || (isFinal && roll > 0.82)) type = "dart";
         pack.push({
           type,
           delay: i * (0.18 + Math.max(0, 0.08 - this.level * 0.01)),
@@ -316,6 +372,9 @@ export class Game {
         this.update(this.step);
         this.accum -= this.step;
       }
+    } else if (this.state === STATES.CUTSCENE && this.cutscene) {
+      this.accum = 0;
+      this.cutscene.update(dt);
     } else {
       this.accum = 0;
       this.updateDecor(dt);
@@ -346,9 +405,12 @@ export class Game {
 
     if (this.levelPhase === "waves") this.updateWaves(dt);
     else if (this.levelPhase === "boss") this.updateBossPhase(dt);
-    else if (this.levelPhase === "clear") {
+    else if (this.levelPhase === "clear" || this.levelPhase === "victory") {
       this.clearTimer -= dt;
-      if (this.clearTimer <= 0) this.nextLevel();
+      if (this.clearTimer <= 0) {
+        if (this.levelPhase === "victory") this.beginVictoryCutscene();
+        else this.nextLevel();
+      }
     }
 
     this.updatePlayer(dt);
@@ -379,7 +441,9 @@ export class Game {
       this.levelPhase = "boss";
       this.boss = spawnBoss(this.level);
       this.enemies.push(this.boss);
-      this.flashMessage(`BOSS — SECTOR ${this.level}`, 1.6);
+      const label =
+        this.level >= MAX_LEVEL ? "FINAL BOSS — BLOCKADE COMMANDER" : `BOSS — SECTOR ${this.level}`;
+      this.flashMessage(label, 1.8);
       this.audio.alert();
     }
   }
@@ -389,6 +453,10 @@ export class Game {
   }
 
   nextLevel() {
+    if (this.level >= MAX_LEVEL) {
+      this.beginVictoryCutscene();
+      return;
+    }
     this.level += 1;
     this.ui.levelclear.classList.add("hidden");
     this.player.invuln = 1.5;
@@ -398,7 +466,7 @@ export class Game {
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
-    this.flashMessage(`SECTOR ${this.level}`, 1.3);
+    this.flashMessage(this.level >= MAX_LEVEL ? "FINAL SECTOR" : `SECTOR ${this.level}`, 1.3);
   }
 
   updatePlayer(dt) {
@@ -522,17 +590,23 @@ export class Game {
 
   moveEnemy(e, dt) {
     if (e.type === "boss") {
+      const holdY = e.final ? 150 : 130;
       if (!e.entered) {
         e.y += 80 * dt;
-        if (e.y >= 130) {
-          e.y = 130;
+        if (e.y >= holdY) {
+          e.y = holdY;
           e.entered = true;
         }
         return;
       }
       e.phase += dt;
-      e.x = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
-      e.y = 130 + Math.sin(e.phase * 1.7) * 18;
+      if (e.final) {
+        e.x = W / 2 + Math.sin(e.phase * 1.15) * (W * 0.34);
+        e.y = holdY + Math.sin(e.phase * 2.1) * 28;
+      } else {
+        e.x = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
+        e.y = holdY + Math.sin(e.phase * 1.7) * 18;
+      }
       return;
     }
 
@@ -554,9 +628,10 @@ export class Game {
 
   enemyShoot(e) {
     const aim = Math.atan2(this.player.y - e.y, this.player.x - e.x);
-    const shots = e.type === "boss" ? 5 : e.type === "heavy" ? 3 : 1;
+    const shots = e.final ? 7 : e.type === "boss" ? 5 : e.type === "heavy" ? 3 : 1;
+    const spread = e.final ? 0.22 : 0.18;
     for (let i = 0; i < shots; i++) {
-      const a = aim + (i - (shots - 1) / 2) * 0.18;
+      const a = aim + (i - (shots - 1) / 2) * spread;
       this.enemyBullets.push({
         x: e.x,
         y: e.y + e.h / 2,
@@ -564,10 +639,25 @@ export class Game {
         h: 10,
         vx: Math.cos(a) * e.bulletSpeed,
         vy: Math.sin(a) * e.bulletSpeed,
-        damage: e.type === "boss" ? 16 : 12,
-        color: "#ff7b8a",
+        damage: e.final ? 18 : e.type === "boss" ? 16 : 12,
+        color: e.final ? "#ffb020" : "#ff7b8a",
         life: 3,
       });
+    }
+    if (e.final && Math.random() < 0.45) {
+      for (let i = -2; i <= 2; i++) {
+        this.enemyBullets.push({
+          x: e.x + i * 18,
+          y: e.y + e.h / 2,
+          w: 6,
+          h: 12,
+          vx: i * 30,
+          vy: e.bulletSpeed * 0.85,
+          damage: 14,
+          color: "#ff5a6e",
+          life: 3,
+        });
+      }
     }
   }
 
@@ -683,18 +773,32 @@ export class Game {
   }
 
   defeatBoss() {
-    if (this.levelPhase === "clear") return;
+    if (this.levelPhase === "clear" || this.levelPhase === "victory") return;
+    this.score += 1000 * this.level;
+    this.burst(W / 2, 160, this.level >= MAX_LEVEL ? "#ffb020" : "#3ef0d0", 60, 360);
+    this.audio.explosion(true);
+    this.boss = null;
+    this.enemies = this.enemies.filter((e) => e.type !== "boss");
+
+    if (this.level >= MAX_LEVEL) {
+      this.levelPhase = "victory";
+      this.clearTimer = 1.2;
+      this.state = STATES.LEVEL_CLEAR;
+      this.ui.levelClearTitle.textContent = "Final Boss Destroyed";
+      this.ui.levelClearSub.textContent = "Freighter path is clear…";
+      this.showScreen("levelclear");
+      return;
+    }
+
     this.levelPhase = "clear";
     this.clearTimer = 2.4;
     this.state = STATES.LEVEL_CLEAR;
     this.ui.levelClearTitle.textContent = `Sector ${this.level} Cleared`;
-    this.ui.levelClearSub.textContent = "Ammo restocked · Next sector inbound";
+    this.ui.levelClearSub.textContent =
+      this.level === MAX_LEVEL - 1
+        ? "Final sector inbound"
+        : "Ammo restocked · Next sector inbound";
     this.showScreen("levelclear");
-    this.score += 1000 * this.level;
-    this.burst(W / 2, 160, "#3ef0d0", 60, 360);
-    this.audio.explosion(true);
-    this.boss = null;
-    this.enemies = this.enemies.filter((e) => e.type !== "boss");
   }
 
   collectPowerup(up) {
@@ -807,7 +911,7 @@ export class Game {
   syncHud() {
     const p = this.player;
     this.ui.score.textContent = String(this.score);
-    this.ui.level.textContent = String(this.level);
+    this.ui.level.textContent = `${this.level} / ${MAX_LEVEL}`;
     this.ui.lives.textContent = String(Math.max(0, this.lives));
     this.ui.shield.style.transform = `scaleX(${clamp(p.shield / 100, 0, 1)})`;
     this.ui.hull.style.transform = `scaleX(${clamp(p.hull / 100, 0, 1)})`;
@@ -821,6 +925,11 @@ export class Game {
 
   draw() {
     const ctx = this.ctx;
+    if (this.state === STATES.CUTSCENE && this.cutscene) {
+      this.cutscene.draw(ctx);
+      return;
+    }
+
     const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0;
     const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0;
 
@@ -953,20 +1062,31 @@ export class Game {
       ctx.translate(e.x, e.y);
       if (e.flash > 0) ctx.globalAlpha = 0.55;
       if (e.type === "boss") {
+        const s = e.final ? 1.25 : 1;
         ctx.fillStyle = e.color;
         ctx.beginPath();
-        ctx.moveTo(0, 40);
-        ctx.lineTo(55, 10);
-        ctx.lineTo(40, -35);
-        ctx.lineTo(0, -20);
-        ctx.lineTo(-40, -35);
-        ctx.lineTo(-55, 10);
+        ctx.moveTo(0, 40 * s);
+        ctx.lineTo(55 * s, 10 * s);
+        ctx.lineTo(40 * s, -35 * s);
+        ctx.lineTo(0, -20 * s);
+        ctx.lineTo(-40 * s, -35 * s);
+        ctx.lineTo(-55 * s, 10 * s);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#1a0b12";
-        ctx.fillRect(-18, -8, 36, 18);
-        ctx.fillStyle = "#ffd0d8";
-        ctx.fillRect(-10, -2, 20, 6);
+        if (e.final) {
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = "#3a2208";
+          ctx.fillRect(-24, -10, 48, 22);
+          ctx.fillStyle = "#fff2cc";
+          ctx.fillRect(-14, -3, 28, 8);
+        } else {
+          ctx.fillStyle = "#1a0b12";
+          ctx.fillRect(-18, -8, 36, 18);
+          ctx.fillStyle = "#ffd0d8";
+          ctx.fillRect(-10, -2, 20, 6);
+        }
       } else {
         ctx.fillStyle = e.color;
         ctx.beginPath();
