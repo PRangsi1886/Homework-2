@@ -15,6 +15,7 @@ import {
 } from "./entities.js";
 import { getSprites, drawSprite } from "./sprites.js";
 import { loadPickupAtlas } from "./pickups.js";
+import { loadEnemyAtlas } from "./enemies.js";
 import {
   createJuiceState,
   addTrauma,
@@ -64,9 +65,13 @@ export class Game {
     this.cutscene = null;
     this.sprites = getSprites();
     this.pickupAtlas = null;
+    this.enemyAtlas = null;
     this.animTime = 0;
     loadPickupAtlas().then((atlas) => {
       this.pickupAtlas = atlas;
+    });
+    loadEnemyAtlas().then((atlas) => {
+      this.enemyAtlas = atlas;
     });
     this.bindUi();
     this.bindInput();
@@ -1568,13 +1573,11 @@ export class Game {
 
   drawEnemies(ctx) {
     for (const e of this.enemies) {
-      let img = this.sprites[e.type] || this.sprites.scout;
-      let w = e.w * 1.35;
-      let h = e.h * 1.35;
+      let w = e.w * 1.45;
+      let h = e.h * 1.45;
       if (e.type === "boss") {
-        img = e.final ? this.sprites.finalBoss : this.sprites.boss;
-        w = e.w * 1.15;
-        h = e.h * 1.15;
+        w = e.w * 1.2;
+        h = e.h * 1.2;
         drawGlow(
           ctx,
           e.x,
@@ -1589,12 +1592,27 @@ export class Game {
         drawGlow(ctx, e.x, e.y, 28, "rgba(255,170,80,0.2)", 0.28);
       }
       const flashing = e.flash > 0;
-      drawSprite(ctx, img, e.x, e.y, w, h, {
-        flash: flashing && e.flash > 0.03,
-        flashRed: flashing && e.flash <= 0.03,
-        sx: e.type === "boss" ? 1 : e.sx ?? 1,
-        sy: e.type === "boss" ? 1 : e.sy ?? 1,
-      });
+      const t = this.animTime + (e.animOffset || 0);
+      const drawn =
+        this.enemyAtlas &&
+        this.enemyAtlas.draw(ctx, e.type, e.x, e.y, w, h, t, {
+          variant: e.variant || 0,
+          final: !!e.final,
+          flash: flashing && e.flash > 0.03,
+          flashRed: flashing && e.flash <= 0.03,
+          sx: e.type === "boss" ? 1 : e.sx ?? 1,
+          sy: e.type === "boss" ? 1 : e.sy ?? 1,
+        });
+      if (!drawn) {
+        let img = this.sprites[e.type] || this.sprites.scout;
+        if (e.type === "boss") img = e.final ? this.sprites.finalBoss : this.sprites.boss;
+        drawSprite(ctx, img, e.x, e.y, w, h, {
+          flash: flashing && e.flash > 0.03,
+          flashRed: flashing && e.flash <= 0.03,
+          sx: e.type === "boss" ? 1 : e.sx ?? 1,
+          sy: e.type === "boss" ? 1 : e.sy ?? 1,
+        });
+      }
       if (e.hp < e.maxHp && e.type !== "boss") {
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32, 3);

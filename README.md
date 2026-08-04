@@ -35,6 +35,8 @@ Procedural synthwave BGM is the fallback when no custom track is loaded.
 
 **Pickup sprites:** Animated strips live in `assets/pickups/` (`shield`, `repair`, `super`, `rocket`, `ammo`, plus optional `*_alt` variants). Horizontal sheets; frame size = sheet height. Replace those PNGs with your own to swap art.
 
+**Enemy sprites:** Animated strips in `assets/enemies/` (`scout`, `dart`, `lancer`, `heavy`, `boss`, `finalBoss`, plus `*_alt` variants). Same horizontal-strip format — drop in replacements to use your originals.
+
 ## Signature mechanics (Chromium B.S.U.–style)
 
 - **Ramming** — collisions damage both ships.

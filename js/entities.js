@@ -129,6 +129,8 @@ export function spawnEnemy(type, x, y, level) {
     flash: 0,
     sx: 1,
     sy: 1,
+    variant: Math.random() < 0.4 ? 1 : 0,
+    animOffset: Math.random() * 10,
   };
 }
 
@@ -165,6 +167,8 @@ export function spawnBoss(level) {
     charging: 0,
     chargeVx: 0,
     chargeVy: 0,
+    variant: 0,
+    animOffset: 0,
   };
 }
 
