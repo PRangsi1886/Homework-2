@@ -429,3 +429,16 @@ export function createVictoryCutscene(score, onDone) {
   cut.beats[0].enter?.(cut);
   return cut;
 }
+
+// Re-export Step 1 stick-figure timeline API alongside legacy cutscenes.
+export {
+  StickFigure,
+  POSES,
+  REST_POSE,
+  lerpPose,
+  resolvePose,
+  PILOT_STYLE,
+  PARTNER_STYLE,
+  BOSS_STYLE,
+} from "./stickFigure.js";
+export { CutsceneTimeline, createTimelineCutscene, normalizeSteps } from "./cutsceneTimeline.js";
