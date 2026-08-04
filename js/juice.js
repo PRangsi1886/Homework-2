@@ -202,9 +202,9 @@ export function drawPostFx(ctx, w, h, juice) {
   ctx.fillStyle = vig;
   ctx.fillRect(0, 0, w, h);
 
-  // cool color grade wash
+  // high-contrast cool grade (Ikaruga-like)
   ctx.globalCompositeOperation = "soft-light";
-  ctx.fillStyle = "rgba(40, 90, 120, 0.18)";
+  ctx.fillStyle = "rgba(30, 40, 55, 0.2)";
   ctx.fillRect(0, 0, w, h);
   ctx.globalCompositeOperation = "source-over";
 

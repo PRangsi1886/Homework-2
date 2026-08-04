@@ -250,6 +250,20 @@ export class Game {
     this.combo = 0;
   }
 
+  currentMusicMode() {
+    if (this.state === STATES.VICTORY) return "victory";
+    if (this.state === STATES.CUTSCENE) return "cutscene";
+    if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.PAUSED) {
+      if (this.levelPhase === "boss" || this.levelPhase === "victory") return "boss";
+      return "combat";
+    }
+    return "title";
+  }
+
+  syncMusic() {
+    this.audio.setMusic(this.currentMusicMode());
+  }
+
   startGame() {
     this.audio.unlock();
     this.audio.launch();
@@ -262,6 +276,7 @@ export class Game {
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
     this.showScreen("cutscene");
+    this.syncMusic();
   }
 
   beginVictoryCutscene() {
@@ -269,6 +284,7 @@ export class Game {
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
     this.showScreen("cutscene");
+    this.audio.setMusic("victory");
   }
 
   beginGameplay() {
@@ -278,6 +294,7 @@ export class Game {
     this.showScreen("playing");
     this.flashMessage("FIGHTER DEPLOYED", 1.4);
     this.audio.launch();
+    this.syncMusic();
   }
 
   showVictory() {
@@ -285,6 +302,7 @@ export class Game {
     this.state = STATES.VICTORY;
     this.ui.victoryScore.textContent = String(this.score);
     this.showScreen("victory");
+    this.audio.setMusic("victory");
   }
 
   skipCutscene() {
@@ -551,6 +569,7 @@ export class Game {
         this.level >= MAX_LEVEL ? "FINAL BOSS — BLOCKADE COMMANDER" : `BOSS — SECTOR ${this.level}`;
       this.flashMessage(label, 1.8);
       this.audio.alert();
+      this.audio.setMusic("boss");
     }
   }
 
@@ -574,6 +593,7 @@ export class Game {
     this.state = STATES.PLAYING;
     this.showScreen("playing");
     this.flashMessage(this.level >= MAX_LEVEL ? "FINAL SECTOR" : `SECTOR ${this.level}`, 1.3);
+    this.audio.setMusic("combat");
   }
 
   updatePlayer(dt) {
@@ -621,7 +641,7 @@ export class Game {
       spawnBurst(this.particles, p.x + (Math.random() - 0.5) * 10, p.y + 22, {
         count: 1,
         speed: 50,
-        colors: ["#7ec8ff", "#ffb040", "#ffffff"],
+        colors: ["#ffffff", "#dce6ff", "#ffb060"],
         life: 0.18,
         size: 1.6,
         gravity: 60,
@@ -907,12 +927,15 @@ export class Game {
 
   enemyShoot(e) {
     const aim = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+    const black = e.polarity === "black" || e.final;
+    const bulletColor = black ? "#1a1e26" : "#f2f5ff";
     if (e.final) {
       const phase = e.bossPhase || 1;
       const shots = 5 + phase * 2;
       const spread = 0.14 + phase * 0.03;
       for (let i = 0; i < shots; i++) {
         const a = aim + (i - (shots - 1) / 2) * spread;
+        const dark = i % 2 === 0;
         this.enemyBullets.push({
           x: e.x,
           y: e.y + e.h / 2,
@@ -921,9 +944,9 @@ export class Game {
           vx: Math.cos(a) * e.bulletSpeed,
           vy: Math.sin(a) * e.bulletSpeed,
           damage: 18,
-          color: "#ffb020",
+          color: dark ? "#1a1e26" : "#f2f5ff",
           life: 3.2,
-          heavy: true,
+          heavy: dark,
         });
       }
       if (phase >= 2) {
@@ -937,8 +960,9 @@ export class Game {
             vx: Math.cos(a) * 240,
             vy: Math.sin(a) * 240,
             damage: 14,
-            color: "#ff5a6e",
+            color: i % 2 ? "#f2f5ff" : "#1a1e26",
             life: 3,
+            heavy: i % 2 === 0,
           });
         }
       }
@@ -952,8 +976,9 @@ export class Game {
             vx: i * 18,
             vy: e.bulletSpeed * 0.95,
             damage: 16,
-            color: "#ff7b8a",
+            color: bulletColor,
             life: 3,
+            heavy: black,
           });
         }
       }
@@ -972,9 +997,9 @@ export class Game {
         vx: Math.cos(a) * e.bulletSpeed,
         vy: Math.sin(a) * e.bulletSpeed,
         damage: e.type === "boss" ? 16 : 12,
-        color: "#ff7b8a",
+        color: bulletColor,
         life: 3,
-        heavy: e.type === "heavy" || e.type === "boss",
+        heavy: black || e.type === "heavy" || e.type === "boss",
       });
     }
   }
@@ -1226,6 +1251,7 @@ export class Game {
       this.state = STATES.GAME_OVER;
       this.showScreen("gameover");
       this.audio.explosion(true);
+      this.audio.setMusic("title");
       return;
     }
 
@@ -1313,41 +1339,40 @@ export class Game {
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, sx, sy);
-    ctx.fillStyle = "#02050b";
+    ctx.fillStyle = "#030406";
     ctx.fillRect(-10, -10, W + 20, H + 20);
 
-    // nebula bands
+    // Ikaruga-like stone/void atmosphere
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "rgba(18, 48, 70, 0.35)");
-    g.addColorStop(0.45, "rgba(8, 20, 40, 0.15)");
-    g.addColorStop(1, "rgba(40, 22, 12, 0.28)");
+    g.addColorStop(0, "rgba(28, 32, 40, 0.55)");
+    g.addColorStop(0.4, "rgba(10, 12, 16, 0.2)");
+    g.addColorStop(1, "rgba(8, 8, 10, 0.55)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
+    // scrolling geometric architecture silhouettes
+    this.drawArchitecture(ctx);
+
     for (const s of this.stars) {
-      ctx.globalAlpha = 0.35 + s.z * 0.4;
-      ctx.fillStyle = s.z > 1.2 ? "#c8fff4" : "#d7e4ff";
+      ctx.globalAlpha = 0.3 + s.z * 0.45;
+      ctx.fillStyle = s.z > 1.2 ? "#ffffff" : "#c8d0dc";
       ctx.fillRect(s.x, s.y, s.s, s.s * (1 + s.z * 0.8));
     }
     ctx.globalAlpha = 1;
 
     // danger line
-    ctx.strokeStyle = "rgba(255, 90, 110, 0.35)";
+    ctx.strokeStyle = "rgba(232, 162, 74, 0.35)";
     ctx.setLineDash([8, 10]);
     ctx.beginPath();
     ctx.moveTo(20, H - 18);
     ctx.lineTo(W - 20, H - 18);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(255, 90, 110, 0.55)";
+    ctx.fillStyle = "rgba(232, 162, 74, 0.65)";
     ctx.font = "600 12px Rajdhani";
     ctx.fillText("COMBAT ZONE", 24, H - 28);
 
     if (this.state !== STATES.TITLE) {
-      // ambient gloom so player light reads
-      ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
-      ctx.fillRect(0, 0, W, H);
-
       this.drawPowerups(ctx);
       this.drawEnemies(ctx);
       this.drawBullets(ctx);
@@ -1367,11 +1392,11 @@ export class Game {
 
     if (this.boss && this.levelPhase === "boss") {
       const ratio = clamp(this.boss.hp / this.boss.maxHp, 0, 1);
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(80, 24, W - 160, 14);
-      ctx.fillStyle = "#ff5a6e";
+      ctx.fillStyle = this.boss.final ? "#e8a24a" : "#dce6ff";
       ctx.fillRect(80, 24, (W - 160) * ratio, 14);
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.strokeStyle = "rgba(255,255,255,0.4)";
       ctx.strokeRect(80, 24, W - 160, 14);
     }
 
@@ -1393,32 +1418,55 @@ export class Game {
     drawPostFx(ctx, W, H, this.juice);
   }
 
+  drawArchitecture(ctx) {
+    const t = (this.juice?.time || performance.now() * 0.001) * 40;
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = "#8a93a2";
+    ctx.fillStyle = "#12151c";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      const y = ((i * 180 + t) % (H + 180)) - 90;
+      const x = i % 2 === 0 ? 24 : W - 90;
+      ctx.fillRect(x, y, 66, 120);
+      ctx.strokeRect(x, y, 66, 120);
+      ctx.beginPath();
+      ctx.moveTo(x, y + 40);
+      ctx.lineTo(x + 66, y + 40);
+      ctx.moveTo(x + 22, y);
+      ctx.lineTo(x + 22, y + 120);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   drawTitleShip(ctx) {
     const t = performance.now() * 0.001;
     const x = W / 2 + Math.sin(t * 0.8) * 30;
     const y = H * 0.58 + Math.cos(t * 1.1) * 10;
     const s = 1 + Math.sin(t * 4) * 0.03;
-    drawSprite(ctx, this.sprites.hero, x, y, 64 * s, 64 * s);
+    drawGlow(ctx, x, y, 80, "rgba(220,230,255,0.4)", 0.45);
+    drawSprite(ctx, this.sprites.hero, x, y, 68 * s, 68 * s);
   }
 
   drawPlayer(ctx) {
     const p = this.player;
-    const glowColor = p.invuln > 1.5 ? "rgba(255,220,120,0.55)" : "rgba(80,200,255,0.45)";
-    drawGlow(ctx, p.x, p.y, 90, glowColor, 0.4);
-    drawGlow(ctx, p.x, p.y + 10, 40, "rgba(255,160,60,0.35)", 0.35);
+    const glowColor = p.invuln > 1.5 ? "rgba(255,200,120,0.5)" : "rgba(220,230,255,0.5)";
+    drawGlow(ctx, p.x, p.y, 95, glowColor, 0.42);
+    drawGlow(ctx, p.x, p.y + 12, 36, "rgba(180,200,255,0.35)", 0.35);
 
     for (const t of p.trail) {
       if (t.life <= 0) continue;
-      ctx.globalAlpha = t.life * 0.7;
-      ctx.fillStyle = "#7ec8ff";
+      ctx.globalAlpha = t.life * 0.75;
+      ctx.fillStyle = "#dce6ff";
       ctx.beginPath();
-      ctx.arc(t.x, t.y, 3, 0, Math.PI * 2);
+      ctx.arc(t.x, t.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
     if (!blink) {
-      drawSprite(ctx, this.sprites.hero, p.x, p.y, 56, 56, {
+      drawSprite(ctx, this.sprites.hero, p.x, p.y, 58, 58, {
         flash: p.hitFlash > 0.05,
         flashRed: p.hitFlash > 0 && p.hitFlash <= 0.05,
         sx: p.sx ?? 1,
@@ -1436,20 +1484,30 @@ export class Game {
         img = e.final ? this.sprites.finalBoss : this.sprites.boss;
         w = e.w * 1.15;
         h = e.h * 1.15;
-        drawGlow(ctx, e.x, e.y, e.final ? 120 : 90, e.final ? "rgba(255,160,40,0.28)" : "rgba(255,70,90,0.25)", 0.35);
+        drawGlow(
+          ctx,
+          e.x,
+          e.y,
+          e.final ? 120 : 90,
+          e.final ? "rgba(255,170,80,0.3)" : "rgba(220,230,255,0.28)",
+          0.35
+        );
+      } else if (e.polarity === "white") {
+        drawGlow(ctx, e.x, e.y, 28, "rgba(220,230,255,0.25)", 0.3);
+      } else {
+        drawGlow(ctx, e.x, e.y, 28, "rgba(255,170,80,0.2)", 0.28);
       }
       const flashing = e.flash > 0;
       drawSprite(ctx, img, e.x, e.y, w, h, {
         flash: flashing && e.flash > 0.03,
         flashRed: flashing && e.flash <= 0.03,
-        // Keep bosses at uniform scale to avoid warping
         sx: e.type === "boss" ? 1 : e.sx ?? 1,
         sy: e.type === "boss" ? 1 : e.sy ?? 1,
       });
       if (e.hp < e.maxHp && e.type !== "boss") {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32, 3);
-        ctx.fillStyle = "#9ef7ff";
+        ctx.fillStyle = "#dce6ff";
         ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32 * (e.hp / e.maxHp), 3);
       }
     }

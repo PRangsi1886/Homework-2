@@ -1,6 +1,6 @@
 # Ferrum Wing
 
-Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu).
+Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu) mechanics and [Ikaruga](https://en.wikipedia.org/wiki/Ikaruga)'s high-contrast geometric art style.
 
 You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. An animated cutscene plays after Launch Sortie, and another after the final victory.
 

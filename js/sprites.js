@@ -1,6 +1,7 @@
 /**
- * Procedural sprites inspired by Chromium B.S.U.'s pre-rendered metallic look:
- * brushed grey hulls, blue hero accent, rust + red glow on hostiles.
+ * Procedural sprites inspired by Ikaruga:
+ * high-contrast black/white polarity, sharp geometric silhouettes,
+ * soft luminous energy, clean facet shading.
  */
 
 function makeCanvas(w, h) {
@@ -10,398 +11,344 @@ function makeCanvas(w, h) {
   return c;
 }
 
-function noise(ctx, x, y, w, h, alpha = 0.08) {
-  const img = ctx.getImageData(x, y, w, h);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i + 3] < 8) continue;
-    const n = (Math.random() - 0.5) * 40;
-    d[i] = Math.max(0, Math.min(255, d[i] + n));
-    d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n));
-    d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n));
-    d[i + 3] = Math.min(255, d[i + 3] + alpha * 255 * Math.random() * 0.2);
-  }
-  ctx.putImageData(img, x, y);
-}
+function facet(ctx, points, hi, mid, lo, light = [-0.4, -0.8]) {
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+  ctx.closePath();
 
-function metalFill(ctx, pathFn, x0, y0, x1, y1, base = "#9aa3ad", hi = "#d7dde4", lo = "#4c555e") {
-  ctx.save();
-  pathFn();
-  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  // rough normal from first triangle for lighting
+  const ax = points[1][0] - points[0][0];
+  const ay = points[1][1] - points[0][1];
+  const bx = points[2][0] - points[0][0];
+  const by = points[2][1] - points[0][1];
+  let nx = ax * by - ay * bx;
+  let ny = bx * ax + by * ay;
+  // use centroid gradient instead for stable look
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of points) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  const g = ctx.createLinearGradient(
+    minX + (maxX - minX) * (0.5 + light[0] * 0.3),
+    minY + (maxY - minY) * (0.5 + light[1] * 0.3),
+    minX + (maxX - minX) * (0.5 - light[0] * 0.3),
+    minY + (maxY - minY) * (0.5 - light[1] * 0.3)
+  );
   g.addColorStop(0, hi);
-  g.addColorStop(0.45, base);
+  g.addColorStop(0.45, mid);
   g.addColorStop(1, lo);
   ctx.fillStyle = g;
   ctx.fill();
-  ctx.restore();
+  void nx;
+  void ny;
 }
 
-function rustSpeckles(ctx, x, y, w, h, count = 18) {
-  for (let i = 0; i < count; i++) {
-    ctx.fillStyle = `rgba(${140 + Math.random() * 40 | 0},${70 + Math.random() * 30 | 0},${30},0.35)`;
-    ctx.beginPath();
-    ctx.arc(x + Math.random() * w, y + Math.random() * h, 0.8 + Math.random() * 1.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function glowArc(ctx, cx, cy, r, color, alpha = 0.85) {
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+function glowDot(ctx, x, y, r, color, alpha = 0.9) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
   g.addColorStop(0, color);
-  g.addColorStop(0.55, color);
+  g.addColorStop(0.35, color);
   g.addColorStop(1, "rgba(0,0,0,0)");
   ctx.globalAlpha = alpha;
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 }
 
+/** Ikaruga-like white-polarity fighter: sharp swept wings, luminous core. */
 function drawHeroShip() {
-  const c = makeCanvas(64, 64);
+  const c = makeCanvas(72, 72);
   const ctx = c.getContext("2d");
-  // wings
-  metalFill(
+
+  // soft polarity aura
+  glowDot(ctx, 36, 38, 28, "rgba(210,230,255,0.55)", 0.55);
+
+  // outer wings
+  facet(
     ctx,
-    () => {
-      ctx.beginPath();
-      ctx.moveTo(32, 6);
-      ctx.lineTo(54, 40);
-      ctx.lineTo(46, 50);
-      ctx.lineTo(32, 44);
-      ctx.lineTo(18, 50);
-      ctx.lineTo(10, 40);
-      ctx.closePath();
-    },
-    10,
-    6,
-    54,
-    52,
-    "#8f98a3",
-    "#cfd6de",
-    "#3f4750"
+    [
+      [36, 8],
+      [64, 44],
+      [52, 52],
+      [36, 40],
+      [20, 52],
+      [8, 44],
+    ],
+    "#ffffff",
+    "#d7dde8",
+    "#6a7380"
   );
-  // blue spine
-  const spine = ctx.createLinearGradient(32, 8, 32, 48);
-  spine.addColorStop(0, "#7ec8ff");
-  spine.addColorStop(0.5, "#2f7fbf");
-  spine.addColorStop(1, "#163a5c");
-  ctx.fillStyle = spine;
+
+  // inner body
+  facet(
+    ctx,
+    [
+      [36, 12],
+      [46, 42],
+      [36, 54],
+      [26, 42],
+    ],
+    "#f4f7ff",
+    "#b8c2d4",
+    "#3a4250"
+  );
+
+  // black polarity stripe / vent
+  ctx.fillStyle = "#12151c";
   ctx.beginPath();
-  ctx.moveTo(32, 10);
-  ctx.lineTo(38, 42);
-  ctx.lineTo(32, 48);
-  ctx.lineTo(26, 42);
+  ctx.moveTo(36, 18);
+  ctx.lineTo(40, 40);
+  ctx.lineTo(36, 48);
+  ctx.lineTo(32, 40);
   ctx.closePath();
   ctx.fill();
-  // wing cannons
-  ctx.fillStyle = "#6b7380";
-  ctx.fillRect(20, 22, 4, 14);
-  ctx.fillRect(40, 22, 4, 14);
-  // thrusters
-  for (const tx of [22, 42]) {
-    const tg = ctx.createLinearGradient(tx, 44, tx + 8, 58);
-    tg.addColorStop(0, "#dfe5ec");
-    tg.addColorStop(1, "#5a6570");
-    ctx.fillStyle = tg;
-    ctx.beginPath();
-    ctx.ellipse(tx + 4, 50, 5, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffb040";
-    ctx.beginPath();
-    ctx.ellipse(tx + 4, 56, 2.5, 2, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  noise(ctx, 0, 0, 64, 64, 0.05);
+
+  // twin cannons
+  ctx.fillStyle = "#2a303a";
+  ctx.fillRect(28, 24, 3, 16);
+  ctx.fillRect(41, 24, 3, 16);
+  ctx.fillStyle = "#9eb6ff";
+  ctx.fillRect(28, 24, 3, 4);
+  ctx.fillRect(41, 24, 3, 4);
+
+  // engine glow
+  glowDot(ctx, 30, 56, 5, "rgba(180,210,255,0.95)");
+  glowDot(ctx, 42, 56, 5, "rgba(180,210,255,0.95)");
   return c;
 }
 
 function drawEnemy(kind) {
   const c = makeCanvas(64, 64);
   const ctx = c.getContext("2d");
+  const white = kind === "scout" || kind === "dart";
+  const hi = white ? "#f5f7fb" : "#3a3f48";
+  const mid = white ? "#c5ccd8" : "#1c2028";
+  const lo = white ? "#6b7382" : "#07090d";
+  const accent = white ? "rgba(200,220,255,0.95)" : "rgba(255,170,80,0.95)";
+
+  glowDot(ctx, 32, 32, 18, accent, 0.35);
+
   if (kind === "scout") {
-    metalFill(
-      ctx,
-      () => {
-        ctx.beginPath();
-        ctx.moveTo(32, 52);
-        ctx.lineTo(50, 22);
-        ctx.quadraticCurveTo(32, 8, 14, 22);
-        ctx.closePath();
-      },
-      14,
-      8,
-      50,
-      52,
-      "#9a9ea6",
-      "#d2d6dc",
-      "#4a5058"
-    );
-    rustSpeckles(ctx, 18, 16, 28, 28, 14);
-    glowArc(ctx, 22, 28, 7, "rgba(255,60,70,0.95)", 0.9);
-    glowArc(ctx, 42, 28, 7, "rgba(255,60,70,0.95)", 0.9);
-    ctx.fillStyle = "#333840";
-    ctx.fillRect(29, 40, 6, 12);
+    // white diamond interceptor (nose down toward player)
+    facet(ctx, [[32, 54], [50, 28], [32, 10], [14, 28]], hi, mid, lo);
+    facet(ctx, [[32, 54], [44, 34], [32, 24], [20, 34]], "#ffffff", "#aeb6c4", "#4a5160");
+    ctx.fillStyle = "#0c0e14";
+    ctx.fillRect(30, 30, 4, 14);
+    glowDot(ctx, 32, 26, 5, accent);
   } else if (kind === "lancer") {
-    metalFill(
-      ctx,
-      () => {
-        ctx.beginPath();
-        ctx.moveTo(32, 54);
-        ctx.lineTo(56, 28);
-        ctx.lineTo(44, 10);
-        ctx.lineTo(32, 18);
-        ctx.lineTo(20, 10);
-        ctx.lineTo(8, 28);
-        ctx.closePath();
-      },
-      8,
-      10,
-      56,
-      54,
-      "#8e949c",
-      "#c8ced6",
-      "#3d4450"
-    );
-    rustSpeckles(ctx, 16, 14, 32, 30, 16);
-    glowArc(ctx, 20, 24, 6, "rgba(255,120,40,0.95)");
-    glowArc(ctx, 44, 24, 6, "rgba(255,120,40,0.95)");
-    ctx.fillStyle = "#2b3038";
-    ctx.fillRect(30, 34, 4, 16);
+    // black swept lancer
+    facet(ctx, [[32, 56], [58, 30], [44, 10], [32, 18], [20, 10], [6, 30]], hi, mid, lo);
+    facet(ctx, [[32, 48], [42, 28], [32, 16], [22, 28]], "#2a303a", "#12151c", "#000000");
+    glowDot(ctx, 22, 24, 4, accent);
+    glowDot(ctx, 42, 24, 4, accent);
+    ctx.fillStyle = "#f0f2f6";
+    ctx.fillRect(30, 34, 4, 12);
   } else if (kind === "heavy") {
-    metalFill(
-      ctx,
-      () => {
-        ctx.beginPath();
-        ctx.ellipse(32, 32, 26, 20, 0, 0, Math.PI * 2);
-      },
-      6,
-      12,
-      58,
-      52,
-      "#8a9098",
-      "#bcc4cc",
-      "#3a414a"
-    );
-    rustSpeckles(ctx, 12, 16, 40, 30, 22);
-    for (const x of [16, 32, 48]) {
-      ctx.fillStyle = "#505860";
-      ctx.beginPath();
-      ctx.ellipse(x, 22, 5, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    glowArc(ctx, 18, 34, 8, "rgba(200,80,255,0.85)");
-    glowArc(ctx, 46, 34, 8, "rgba(200,80,255,0.85)");
-    ctx.fillStyle = "#22272e";
-    ctx.fillRect(28, 38, 8, 14);
+    // heavy block ship, white armor plates
+    facet(ctx, [[10, 20], [54, 20], [58, 40], [32, 56], [6, 40]], hi, mid, lo);
+    facet(ctx, [[18, 24], [46, 24], [48, 38], [32, 48], [16, 38]], "#ffffff", "#b0b8c6", "#555e6c");
+    ctx.fillStyle = "#0c0e14";
+    ctx.fillRect(28, 28, 8, 16);
+    for (const x of [18, 32, 46]) glowDot(ctx, x, 22, 4, accent, 0.8);
   } else if (kind === "dart") {
-    metalFill(
-      ctx,
-      () => {
-        ctx.beginPath();
-        ctx.moveTo(32, 54);
-        ctx.lineTo(44, 28);
-        ctx.lineTo(32, 8);
-        ctx.lineTo(20, 28);
-        ctx.closePath();
-      },
-      20,
-      8,
-      44,
-      54,
-      "#7f909c",
-      "#c5d8e4",
-      "#334048"
-    );
-    glowArc(ctx, 32, 30, 8, "rgba(80,200,255,0.9)");
+    // slim black dagger
+    facet(ctx, [[32, 56], [42, 30], [32, 8], [22, 30]], "#2c323c", "#141820", "#000000");
+    facet(ctx, [[32, 50], [38, 30], [32, 14], [26, 30]], "#f2f4f8", "#9aa3b2", "#3a4250");
+    glowDot(ctx, 32, 28, 5, accent);
   }
-  noise(ctx, 0, 0, 64, 64, 0.06);
   return c;
 }
 
 function drawBoss(final = false) {
-  const w = final ? 192 : 160;
-  const h = final ? 112 : 96;
+  const w = final ? 200 : 168;
+  const h = final ? 120 : 100;
   const c = makeCanvas(w, h);
   const ctx = c.getContext("2d");
   const cx = w / 2;
-  const cy = h / 2;
+  const cy = h / 2 + 4;
 
-  metalFill(
+  glowDot(ctx, cx, cy, final ? 70 : 52, final ? "rgba(255,180,90,0.45)" : "rgba(200,220,255,0.4)", 0.5);
+
+  // wide geometric fortress wing
+  facet(
     ctx,
-    () => {
-      ctx.beginPath();
-      ctx.moveTo(cx, h - 12);
-      ctx.lineTo(w - 18, cy + 10);
-      ctx.quadraticCurveTo(w - 8, cy - 10, w - 28, 18);
-      ctx.lineTo(cx + 20, 22);
-      ctx.lineTo(cx, 14);
-      ctx.lineTo(cx - 20, 22);
-      ctx.lineTo(28, 18);
-      ctx.quadraticCurveTo(8, cy - 10, 18, cy + 10);
-      ctx.closePath();
-    },
-    10,
-    10,
-    w - 10,
-    h - 10,
-    "#8d949d",
-    "#c9d0d8",
-    "#3b424c"
+    [
+      [cx, h - 10],
+      [w - 12, cy + 16],
+      [w - 20, 18],
+      [cx + 28, 22],
+      [cx, 12],
+      [cx - 28, 22],
+      [20, 18],
+      [12, cy + 16],
+    ],
+    final ? "#2a303a" : "#eef1f6",
+    final ? "#12151c" : "#b4bcc8",
+    final ? "#000000" : "#5a6270"
   );
-  rustSpeckles(ctx, 20, 18, w - 40, h - 36, final ? 40 : 26);
+
+  // center core plates
+  facet(
+    ctx,
+    [
+      [cx - 34, cy - 10],
+      [cx + 34, cy - 10],
+      [cx + 40, cy + 18],
+      [cx, cy + 30],
+      [cx - 40, cy + 18],
+    ],
+    final ? "#f4f6fa" : "#1a1e26",
+    final ? "#c0c6d2" : "#0a0c10",
+    final ? "#6a7280" : "#000000"
+  );
 
   // weapon pods
   const pods = final
     ? [
-        [cx - 58, 28],
-        [cx - 38, 22],
-        [cx + 38, 22],
-        [cx + 58, 28],
-        [cx - 70, 48],
-        [cx + 70, 48],
+        [cx - 62, 34],
+        [cx - 40, 26],
+        [cx + 40, 26],
+        [cx + 62, 34],
+        [cx - 78, 52],
+        [cx + 78, 52],
       ]
     : [
-        [cx - 48, 26],
-        [cx - 30, 22],
-        [cx + 30, 22],
-        [cx + 48, 26],
+        [cx - 52, 30],
+        [cx - 32, 24],
+        [cx + 32, 24],
+        [cx + 52, 30],
       ];
   for (const [px, py] of pods) {
-    const g = ctx.createLinearGradient(px, py - 10, px, py + 14);
-    g.addColorStop(0, "#6a7280");
-    g.addColorStop(1, "#2a3038");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(px, py, final ? 7 : 6, final ? 11 : 9, 0, 0, Math.PI * 2);
-    ctx.fill();
+    facet(
+      ctx,
+      [
+        [px - 6, py - 10],
+        [px + 6, py - 10],
+        [px + 7, py + 12],
+        [px - 7, py + 12],
+      ],
+      "#dfe4ec",
+      "#8a93a2",
+      "#2a303a"
+    );
   }
 
-  // core glow
-  const coreColor = final ? "rgba(255,170,40,0.95)" : "rgba(255,70,80,0.95)";
-  glowArc(ctx, cx - 16, cy, final ? 16 : 12, coreColor);
-  glowArc(ctx, cx + 16, cy, final ? 16 : 12, coreColor);
-  glowArc(ctx, cx, cy - 4, final ? 14 : 10, coreColor, 0.7);
+  // polarity cores
+  const core = final ? "rgba(255,170,70,0.95)" : "rgba(220,235,255,0.95)";
+  glowDot(ctx, cx - 14, cy, final ? 12 : 9, core);
+  glowDot(ctx, cx + 14, cy, final ? 12 : 9, core);
+  glowDot(ctx, cx, cy - 2, final ? 10 : 8, core, 0.7);
 
-  ctx.fillStyle = "#1a1f26";
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + 8, final ? 18 : 14, final ? 10 : 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = final ? "#ffe2a0" : "#ffd0d8";
-  ctx.fillRect(cx - 10, cy + 4, 20, 5);
-
-  if (final) {
-    ctx.strokeStyle = "rgba(255,180,60,0.45)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 70, 36, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  noise(ctx, 0, 0, w, h, 0.05);
+  ctx.fillStyle = final ? "#0a0c10" : "#f8f9fc";
+  ctx.fillRect(cx - 12, cy + 4, 24, 5);
   return c;
 }
 
 function drawAmmo(kind) {
   const sizes = {
-    gun: [12, 28],
-    ion: [14, 40],
-    plasma: [20, 36],
+    gun: [14, 28],
+    ion: [16, 40],
+    plasma: [22, 36],
     rocket: [18, 40],
-    enemy: [12, 12],
-    enemyHeavy: [14, 14],
+    enemy: [14, 14],
+    enemyHeavy: [16, 16],
   };
-  const [w, h] = sizes[kind] || [12, 24];
+  const [w, h] = sizes[kind] || [14, 24];
   const c = makeCanvas(w, h);
   const ctx = c.getContext("2d");
   const cx = w / 2;
 
   if (kind === "gun") {
+    // white polarity bolt
+    glowDot(ctx, cx, 8, 7, "rgba(255,255,255,0.95)");
     const g = ctx.createLinearGradient(cx, 0, cx, h);
     g.addColorStop(0, "#ffffff");
-    g.addColorStop(0.2, "#ffe08a");
-    g.addColorStop(0.55, "#ff8a30");
-    g.addColorStop(1, "rgba(80,20,0,0)");
+    g.addColorStop(0.35, "#c8d4ff");
+    g.addColorStop(1, "rgba(40,60,120,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(cx, 6, 4, 5, 0, 0, Math.PI * 2);
+    ctx.moveTo(cx - 2, 6);
+    ctx.lineTo(cx + 2, 6);
+    ctx.lineTo(cx + 1, h);
+    ctx.lineTo(cx - 1, h);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillRect(cx - 1.5, 6, 3, h - 8);
   } else if (kind === "ion") {
     const g = ctx.createLinearGradient(cx, 0, cx, h);
-    g.addColorStop(0, "#e8ffe8");
-    g.addColorStop(0.25, "#6dff9a");
-    g.addColorStop(1, "rgba(0,80,40,0)");
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.25, "#9eb6ff");
+    g.addColorStop(1, "rgba(20,40,100,0)");
     ctx.fillStyle = g;
     ctx.fillRect(cx - 2, 2, 4, h - 4);
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.45;
     ctx.fillRect(cx - 4, 4, 8, h - 8);
     ctx.globalAlpha = 1;
   } else if (kind === "plasma") {
-    const g = ctx.createRadialGradient(cx, 10, 1, cx, 14, 12);
+    // black-polarity energy orb with amber rim
+    glowDot(ctx, cx, 12, 11, "rgba(255,180,90,0.85)");
+    const g = ctx.createRadialGradient(cx, 12, 1, cx, 14, 10);
     g.addColorStop(0, "#ffffff");
-    g.addColorStop(0.35, "#7ec8ff");
-    g.addColorStop(0.7, "#5a4dff");
-    g.addColorStop(1, "rgba(40,0,80,0)");
+    g.addColorStop(0.25, "#1a1e26");
+    g.addColorStop(0.7, "#000000");
+    g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(cx, 12, 8, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    const t = ctx.createLinearGradient(cx, 16, cx, h);
-    t.addColorStop(0, "rgba(120,100,255,0.8)");
-    t.addColorStop(1, "rgba(40,0,80,0)");
-    ctx.fillStyle = t;
-    ctx.beginPath();
-    ctx.moveTo(cx - 5, 16);
-    ctx.lineTo(cx + 5, 16);
-    ctx.lineTo(cx, h);
-    ctx.closePath();
+    ctx.ellipse(cx, 12, 8, 9, 0, 0, Math.PI * 2);
     ctx.fill();
   } else if (kind === "rocket") {
-    // metallic body + bright tip + exhaust
-    metalFill(
+    facet(
       ctx,
-      () => {
-        ctx.beginPath();
-        ctx.moveTo(cx, 2);
-        ctx.lineTo(cx + 5, 12);
-        ctx.lineTo(cx + 4, 30);
-        ctx.lineTo(cx - 4, 30);
-        ctx.lineTo(cx - 5, 12);
-        ctx.closePath();
-      },
-      cx - 5,
-      2,
-      cx + 5,
-      30,
-      "#9aa3ad",
-      "#e0e6ec",
-      "#3f4750"
+      [
+        [cx, 2],
+        [cx + 5, 12],
+        [cx + 4, 28],
+        [cx - 4, 28],
+        [cx - 5, 12],
+      ],
+      "#f2f4f8",
+      "#9aa3b2",
+      "#1c2028"
     );
-    ctx.fillStyle = "#ff5a40";
-    ctx.beginPath();
-    ctx.moveTo(cx, 2);
-    ctx.lineTo(cx + 4, 10);
-    ctx.lineTo(cx - 4, 10);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillStyle = "#0c0e14";
+    ctx.fillRect(cx - 2, 10, 4, 14);
+    glowDot(ctx, cx, 6, 4, "rgba(255,200,120,0.95)");
     const eg = ctx.createLinearGradient(cx, 28, cx, h);
-    eg.addColorStop(0, "#fff2a0");
-    eg.addColorStop(0.4, "#ff8a30");
-    eg.addColorStop(1, "rgba(80,20,0,0)");
+    eg.addColorStop(0, "#fff2cc");
+    eg.addColorStop(0.4, "#ff9a40");
+    eg.addColorStop(1, "rgba(40,10,0,0)");
     ctx.fillStyle = eg;
     ctx.beginPath();
-    ctx.moveTo(cx - 3, 30);
-    ctx.lineTo(cx + 3, 30);
+    ctx.moveTo(cx - 3, 28);
+    ctx.lineTo(cx + 3, 28);
     ctx.lineTo(cx, h);
     ctx.closePath();
     ctx.fill();
-  } else if (kind === "enemy" || kind === "enemyHeavy") {
-    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2);
-    g.addColorStop(0, "#fff0f0");
-    g.addColorStop(0.35, kind === "enemyHeavy" ? "#ffb040" : "#ff6a78");
-    g.addColorStop(1, "rgba(60,0,0,0)");
+  } else if (kind === "enemy") {
+    // white polarity orb
+    glowDot(ctx, cx, cx, w / 2, "rgba(255,255,255,0.95)");
+    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 1);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.45, "#d0d8e8");
+    g.addColorStop(1, "rgba(80,90,120,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cx, w / 2 - 1, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === "enemyHeavy") {
+    // black polarity orb
+    glowDot(ctx, cx, cx, w / 2, "rgba(255,160,70,0.75)");
+    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 1);
+    g.addColorStop(0, "#f0f2f6");
+    g.addColorStop(0.3, "#1a1e26");
+    g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(cx, cx, w / 2 - 1, 0, Math.PI * 2);
@@ -413,39 +360,34 @@ function drawAmmo(kind) {
 function drawPowerup(kind) {
   const c = makeCanvas(32, 32);
   const ctx = c.getContext("2d");
-  const colors = {
-    shield: ["#3ef0d0", "#0b5a50"],
-    repair: ["#f0a23a", "#6a3a08"],
-    super: ["#ff5a6e", "#5a1020"],
-    ammo: ["#9eb3d1", "#2a3648"],
-    rocket: ["#ff8a40", "#4a1808"],
+  const map = {
+    shield: ["#e8eeff", "#6a82c8"],
+    repair: ["#ffe2b0", "#c07820"],
+    super: ["#ffffff", "#d0d0d0"],
+    ammo: ["#c8d0dc", "#3a4250"],
+    rocket: ["#ffb060", "#6a3010"],
   };
-  const [hi, lo] = colors[kind] || colors.ammo;
-  metalFill(
+  const [hi, lo] = map[kind] || map.ammo;
+  glowDot(ctx, 16, 16, 14, hi, 0.45);
+  facet(
     ctx,
-    () => {
-      ctx.beginPath();
-      ctx.rect(6, 6, 20, 20);
-    },
-    6,
-    6,
-    26,
-    26,
-    "#7a8490",
-    "#c5ced8",
-    "#303840"
+    [
+      [16, 4],
+      [28, 16],
+      [16, 28],
+      [4, 16],
+    ],
+    hi,
+    "#b0b8c4",
+    lo
   );
-  const g = ctx.createLinearGradient(8, 8, 24, 24);
-  g.addColorStop(0, hi);
-  g.addColorStop(1, lo);
-  ctx.fillStyle = g;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.fillStyle = "#0c0e14";
   ctx.beginPath();
-  ctx.arc(16, 16, 7, 0, Math.PI * 2);
+  ctx.arc(16, 16, 4, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = hi;
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(5.5, 5.5, 21, 21);
-  rustSpeckles(ctx, 6, 6, 20, 20, 6);
   return c;
 }
 
@@ -484,13 +426,13 @@ export function drawSprite(ctx, img, x, y, w, h, opts = {}) {
   const dh = h * sy;
   ctx.save();
   if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
-  if (opts.flash) ctx.filter = "brightness(3.2) contrast(1.15)";
-  else if (opts.flashRed) ctx.filter = "brightness(1.7) sepia(1) hue-rotate(-50deg) saturate(6)";
+  if (opts.flash) ctx.filter = "brightness(3.4) contrast(1.2)";
+  else if (opts.flashRed) ctx.filter = "brightness(1.5) sepia(1) hue-rotate(-35deg) saturate(5)";
   ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
   if (opts.flash || opts.flashRed) {
     ctx.filter = "none";
     ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = opts.flashRed ? 0.4 : 0.55;
+    ctx.globalAlpha = opts.flashRed ? 0.35 : 0.5;
     ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
   }
   ctx.restore();
