@@ -1,6 +1,6 @@
 const STORAGE_KEY = "ferrum-wing-volume";
 const MUTE_KEY = "ferrum-wing-muted";
-const BASE_GAIN = 0.28;
+const BASE_GAIN = 0.55;
 
 /** Lightweight Web Audio synth for arcade feedback. */
 export class AudioBus {
