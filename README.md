@@ -25,7 +25,9 @@ Then visit `http://localhost:8080`.
 | Right-click twice | Self-destruct |
 | `P` / Esc | Pause |
 | `M` | Mute / unmute |
-| Volume slider (bottom-left) | Adjust master volume |
+| Volume slider (bottom-left) | Adjust master volume (SFX + BGM) |
+
+Procedural synthwave BGM shifts with title, cutscenes, combat, boss fights, and victory.
 
 ## Signature mechanics (Chromium B.S.U.–style)
 

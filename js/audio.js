@@ -2,14 +2,102 @@ const STORAGE_KEY = "ferrum-wing-volume";
 const MUTE_KEY = "ferrum-wing-muted";
 const BASE_GAIN = 0.55;
 
-/** Lightweight Web Audio synth for arcade feedback. */
+const NOTE = {
+  C2: 65.41,
+  D2: 73.42,
+  E2: 82.41,
+  F2: 87.31,
+  G2: 98.0,
+  A2: 110.0,
+  Bb2: 116.54,
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  F3: 174.61,
+  G3: 196.0,
+  A3: 220.0,
+  Bb3: 233.08,
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.0,
+  A4: 440.0,
+  Bb4: 466.16,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25,
+};
+
+const TRACKS = {
+  title: {
+    bpm: 86,
+    swing: 0.04,
+    bass: [NOTE.A2, 0, NOTE.A2, 0, NOTE.G2, 0, NOTE.F2, 0, NOTE.A2, 0, NOTE.C3, 0, NOTE.G2, 0, NOTE.E2, 0],
+    arp: [NOTE.A3, NOTE.C4, NOTE.E4, NOTE.A4, NOTE.G3, NOTE.C4, NOTE.E4, NOTE.G4, NOTE.F3, NOTE.A3, NOTE.C4, NOTE.F4, NOTE.E3, NOTE.G3, NOTE.B3, NOTE.E4],
+    lead: [NOTE.E4, 0, 0, NOTE.C4, 0, 0, NOTE.A3, 0, NOTE.G4, 0, 0, NOTE.E4, 0, NOTE.D4, 0, 0],
+    pad: [NOTE.A3, NOTE.C4, NOTE.E4],
+    drums: false,
+    intensity: 0.55,
+  },
+  cutscene: {
+    bpm: 78,
+    swing: 0.02,
+    bass: [NOTE.F2, 0, 0, 0, NOTE.G2, 0, 0, 0, NOTE.A2, 0, 0, 0, NOTE.G2, 0, 0, 0],
+    arp: [NOTE.A3, 0, NOTE.C4, 0, NOTE.E4, 0, NOTE.C4, 0, NOTE.G3, 0, NOTE.Bb3, 0, NOTE.D4, 0, NOTE.Bb3, 0],
+    lead: [NOTE.C4, 0, 0, 0, NOTE.E4, 0, 0, 0, NOTE.G4, 0, 0, NOTE.E4, 0, 0, NOTE.C4, 0],
+    pad: [NOTE.F3, NOTE.A3, NOTE.C4],
+    drums: false,
+    intensity: 0.45,
+  },
+  combat: {
+    bpm: 128,
+    swing: 0.05,
+    bass: [NOTE.A2, NOTE.A2, 0, NOTE.A2, NOTE.G2, NOTE.G2, 0, NOTE.G2, NOTE.F2, NOTE.F2, 0, NOTE.F2, NOTE.E2, NOTE.E2, NOTE.G2, NOTE.A2],
+    arp: [NOTE.A3, NOTE.C4, NOTE.E4, NOTE.A4, NOTE.A3, NOTE.C4, NOTE.G4, NOTE.E4, NOTE.F3, NOTE.A3, NOTE.C4, NOTE.F4, NOTE.E3, NOTE.G3, NOTE.B3, NOTE.E4],
+    lead: [NOTE.A4, 0, NOTE.E4, 0, NOTE.C5, 0, NOTE.A4, 0, NOTE.G4, 0, NOTE.E4, NOTE.G4, 0, NOTE.A4, 0, 0],
+    pad: [NOTE.A3, NOTE.C4, NOTE.E4],
+    drums: true,
+    intensity: 0.85,
+  },
+  boss: {
+    bpm: 144,
+    swing: 0.03,
+    bass: [NOTE.E2, NOTE.E2, NOTE.E2, 0, NOTE.F2, NOTE.F2, 0, NOTE.G2, NOTE.E2, NOTE.E2, NOTE.E2, 0, NOTE.D2, NOTE.D2, NOTE.F2, NOTE.E2],
+    arp: [NOTE.E4, NOTE.G4, NOTE.Bb4, NOTE.E5, NOTE.E4, NOTE.G4, NOTE.D5, NOTE.Bb4, NOTE.F4, NOTE.A4, NOTE.C5, NOTE.F5, NOTE.E4, NOTE.G4, NOTE.B4, NOTE.E5],
+    lead: [NOTE.E5, NOTE.Bb4, 0, NOTE.G4, NOTE.E5, 0, NOTE.F5, 0, NOTE.E5, NOTE.D5, 0, NOTE.Bb4, NOTE.G4, 0, NOTE.E4, 0],
+    pad: [NOTE.E3, NOTE.G3, NOTE.Bb3],
+    drums: true,
+    intensity: 1,
+  },
+  victory: {
+    bpm: 110,
+    swing: 0.02,
+    bass: [NOTE.C3, 0, NOTE.C3, 0, NOTE.G2, 0, NOTE.G2, 0, NOTE.A2, 0, NOTE.A2, 0, NOTE.F2, 0, NOTE.G2, 0],
+    arp: [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.C5, NOTE.B3, NOTE.D4, NOTE.G4, NOTE.B4, NOTE.A3, NOTE.C4, NOTE.E4, NOTE.A4, NOTE.F3, NOTE.A3, NOTE.C4, NOTE.F4],
+    lead: [NOTE.G4, 0, NOTE.E4, NOTE.G4, NOTE.C5, 0, 0, NOTE.B4, NOTE.A4, 0, NOTE.E4, 0, NOTE.F4, NOTE.G4, 0, 0],
+    pad: [NOTE.C4, NOTE.E4, NOTE.G4],
+    drums: false,
+    intensity: 0.7,
+  },
+};
+
+/** Lightweight Web Audio synth + procedural BGM for Ferrum Wing. */
 export class AudioBus {
   constructor() {
     this.ctx = null;
     this.enabled = true;
     this.master = null;
+    this.sfxGain = null;
+    this.musicGain = null;
     this.volume = this.loadVolume();
     this.muted = this.loadMuted();
+    this.musicMode = "title";
+    this.musicPlaying = false;
+    this.musicTimer = null;
+    this.nextNoteTime = 0;
+    this.step = 0;
+    this.padNodes = null;
   }
 
   loadVolume() {
@@ -28,7 +116,10 @@ export class AudioBus {
   }
 
   unlock() {
-    if (this.ctx) return;
+    if (this.ctx) {
+      this.resume();
+      return;
+    }
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) {
       this.enabled = false;
@@ -36,8 +127,16 @@ export class AudioBus {
     }
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
-    this.applyGain();
+    this.sfxGain = this.ctx.createGain();
+    this.musicGain = this.ctx.createGain();
+    this.sfxGain.gain.value = 1;
+    this.musicGain.gain.value = 0.42;
+    this.sfxGain.connect(this.master);
+    this.musicGain.connect(this.master);
     this.master.connect(this.ctx.destination);
+    this.applyGain();
+    this.resume();
+    if (!this.musicPlaying) this.setMusic(this.musicMode || "title");
   }
 
   applyGain() {
@@ -53,6 +152,7 @@ export class AudioBus {
     if (this.volume > 0 && this.muted) this.muted = false;
     this.applyGain();
     this.persist();
+    if (!this.muted && this.ctx && !this.musicPlaying) this.setMusic(this.musicMode);
   }
 
   getVolume() {
@@ -79,7 +179,7 @@ export class AudioBus {
   }
 
   ready() {
-    return this.enabled && this.ctx && this.master && !this.isMuted();
+    return this.enabled && this.ctx && this.sfxGain && !this.isMuted();
   }
 
   tone(freq, duration, type = "square", gain = 0.2, slide = 0, delay = 0) {
@@ -97,7 +197,7 @@ export class AudioBus {
     g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), t0 + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
     osc.connect(g);
-    g.connect(this.master);
+    g.connect(this.sfxGain);
     osc.start(t0);
     osc.stop(t0 + duration + 0.03);
   }
@@ -121,9 +221,159 @@ export class AudioBus {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
     src.connect(filter);
     filter.connect(g);
-    g.connect(this.master);
+    g.connect(this.sfxGain);
     src.start(t0);
   }
+
+  // --- Background music -------------------------------------------------
+
+  setMusic(mode = "title") {
+    this.musicMode = TRACKS[mode] ? mode : "title";
+    if (!this.ctx || !this.musicGain) return;
+    this.resume();
+    this.stopPad();
+    this.step = 0;
+    this.nextNoteTime = this.ctx.currentTime + 0.05;
+    if (!this.musicPlaying) {
+      this.musicPlaying = true;
+      this.pumpMusic();
+    }
+    this.startPad();
+  }
+
+  stopMusic() {
+    this.musicPlaying = false;
+    if (this.musicTimer) {
+      clearTimeout(this.musicTimer);
+      this.musicTimer = null;
+    }
+    this.stopPad();
+  }
+
+  startPad() {
+    if (!this.ctx || !this.musicGain) return;
+    const track = TRACKS[this.musicMode];
+    const t0 = this.ctx.currentTime;
+    const nodes = [];
+    for (const freq of track.pad) {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      filter.type = "lowpass";
+      filter.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.03 * track.intensity, t0 + 1.2);
+      osc.connect(filter);
+      filter.connect(g);
+      g.connect(this.musicGain);
+      osc.start(t0);
+      nodes.push({ osc, g });
+    }
+    this.padNodes = nodes;
+  }
+
+  stopPad() {
+    if (!this.padNodes) return;
+    const t0 = this.ctx?.currentTime ?? 0;
+    for (const n of this.padNodes) {
+      try {
+        n.g.gain.cancelScheduledValues(t0);
+        n.g.gain.setTargetAtTime(0.0001, t0, 0.2);
+        n.osc.stop(t0 + 0.5);
+      } catch {
+        /* already stopped */
+      }
+    }
+    this.padNodes = null;
+  }
+
+  pumpMusic() {
+    if (!this.musicPlaying || !this.ctx) return;
+    const track = TRACKS[this.musicMode];
+    const secondsPerBeat = 60 / track.bpm;
+    const stepDur = secondsPerBeat / 2; // 8th notes
+    const horizon = this.ctx.currentTime + 0.2;
+
+    while (this.nextNoteTime < horizon) {
+      const i = this.step % 16;
+      const swing = i % 2 === 1 ? stepDur * track.swing : 0;
+      const t = this.nextNoteTime + swing;
+      const intensity = track.intensity;
+
+      if (track.bass[i]) this.musicNote(track.bass[i], t, stepDur * 0.9, "sawtooth", 0.07 * intensity, 180);
+      if (track.arp[i]) this.musicNote(track.arp[i], t, stepDur * 0.55, "triangle", 0.035 * intensity, 2400);
+      if (track.lead[i]) this.musicNote(track.lead[i], t, stepDur * 1.1, "square", 0.028 * intensity, 1800);
+
+      if (track.drums) {
+        if (i % 4 === 0) this.musicKick(t, 0.08 * intensity);
+        if (i % 4 === 2) this.musicHat(t, 0.035 * intensity);
+        if (i === 4 || i === 12) this.musicHat(t, 0.05 * intensity);
+      }
+
+      this.nextNoteTime += stepDur;
+      this.step += 1;
+    }
+
+    this.musicTimer = setTimeout(() => this.pumpMusic(), 40);
+  }
+
+  musicNote(freq, time, duration, type, gain, filterFreq) {
+    if (!this.musicGain) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(filterFreq, time);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), time + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(this.musicGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }
+
+  musicKick(time, gain) {
+    if (!this.musicGain) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(140, time);
+    osc.frequency.exponentialRampToValueAtTime(40, time + 0.14);
+    g.gain.setValueAtTime(gain, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+    osc.connect(g);
+    g.connect(this.musicGain);
+    osc.start(time);
+    osc.stop(time + 0.2);
+  }
+
+  musicHat(time, gain) {
+    if (!this.musicGain) return;
+    const len = Math.floor(this.ctx.sampleRate * 0.05);
+    const buffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = this.ctx.createBufferSource();
+    const g = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    src.buffer = buffer;
+    filter.type = "highpass";
+    filter.frequency.value = 6000;
+    g.gain.setValueAtTime(gain, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(this.musicGain);
+    src.start(time);
+  }
+
+  // --- SFX --------------------------------------------------------------
 
   shoot(weapon) {
     if (weapon === "rocket") {
@@ -160,7 +410,6 @@ export class AudioBus {
     }
   }
 
-  /** Distinct pickup sting by type. */
   pickup(type = "generic") {
     this.unlock();
     if (type === "shield") {

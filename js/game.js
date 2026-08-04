@@ -119,13 +119,22 @@ export class Game {
     this.ui.muteBtn.addEventListener("click", () => {
       this.audio.unlock();
       this.audio.toggleMute();
+      this.audio.setMusic(this.currentMusicMode());
       this.syncVolumeUi();
     });
     const onVolumeInput = () => {
       this.audio.unlock();
       this.audio.setVolume(Number(this.ui.volumeSlider.value) / 100);
+      this.audio.setMusic(this.currentMusicMode());
       this.syncVolumeUi();
     };
+    // First interaction can start title music
+    const bootMusic = () => {
+      this.audio.unlock();
+      this.audio.setMusic(this.currentMusicMode());
+    };
+    window.addEventListener("pointerdown", bootMusic, { once: true });
+    window.addEventListener("keydown", bootMusic, { once: true });
     this.ui.volumeSlider.addEventListener("input", onVolumeInput);
     this.ui.volumeSlider.addEventListener("change", onVolumeInput);
     // Keep slider drags from steering the fighter
@@ -1018,7 +1027,7 @@ export class Game {
           impactFlash(this.juice, "rgba(255,180,80,0.16)", 0.16, 0.55);
         } else {
           addTrauma(this.juice, 0.04);
-          this.audio.hit();
+          if (!b.pierce || Math.random() < 0.3) this.audio.hit();
         }
         this.burst(b.x, b.y, b.color, b.weapon === "rocket" ? 18 : 5, b.weapon === "rocket" ? 220 : 100);
         if (b.splash) this.applySplash(b, e);
