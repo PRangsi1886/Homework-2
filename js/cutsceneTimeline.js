@@ -201,6 +201,40 @@ export class CutsceneTimeline {
       this._poseBlendDur[figId] = Math.max(0.01, step.poseBlend ?? 0.35);
     }
 
+    // Multi-figure cast: { partner: { pose, visible, rootX, rootY, facing }, ... }
+    if (step.cast) {
+      for (const [id, cfg] of Object.entries(step.cast)) {
+        const f = this.figures[id];
+        if (!f) continue;
+        if (cfg.visible != null) f.visible = !!cfg.visible;
+        if (cfg.pose != null) {
+          this._poseFrom[id] = { ...f.pose };
+          this._poseTo[id] = resolvePose(cfg.pose);
+          if (cfg.rootX != null) this._poseTo[id].rootX = cfg.rootX;
+          if (cfg.rootY != null) this._poseTo[id].rootY = cfg.rootY;
+          if (cfg.facing != null) this._poseTo[id].facing = cfg.facing;
+          this._poseBlend[id] = 0;
+          this._poseBlendDur[id] = Math.max(0.01, cfg.poseBlend ?? step.poseBlend ?? 0.35);
+        } else {
+          if (cfg.rootX != null) f.pose.rootX = cfg.rootX;
+          if (cfg.rootY != null) f.pose.rootY = cfg.rootY;
+          if (cfg.facing != null) f.pose.facing = cfg.facing;
+        }
+      }
+    }
+
+    // Hide figures listed in step.hide
+    if (step.hide) {
+      for (const id of step.hide) {
+        if (this.figures[id]) this.figures[id].visible = false;
+      }
+    }
+    if (step.show) {
+      for (const id of step.show) {
+        if (this.figures[id]) this.figures[id].visible = true;
+      }
+    }
+
     if (step.screenShake) addTrauma(this.juice, step.screenShake);
     if (step.freezeFrame) hitStop(this.juice, step.freezeFrame);
 
@@ -258,25 +292,45 @@ export class CutsceneTimeline {
 
     // Pose blends + run cycles
     for (const [id, fig] of Object.entries(this.figures)) {
-      if (!fig.visible) continue;
-      if (step?.figure === id || (!step?.figure && id === "pilot") || step?.drive?.includes?.(id)) {
-        if (step?.runCycle) {
-          fig.tickRun(dt, step.runSpeed ?? 2.4);
-          if (step.rootX != null) fig.pose.rootX = step.rootX;
-          if (step.rootY != null) fig.pose.rootY = step.rootY;
-          if (step.facing != null) fig.pose.facing = step.facing;
-          // Optional world scroll while running
-          if (step.scrollX) fig.pose.rootX += step.scrollX * dt;
-        } else if (this._poseTo[id]) {
-          const dur = this._poseBlendDur[id] || 0.35;
-          this._poseBlend[id] = Math.min(1, (this._poseBlend[id] || 0) + dt / dur);
-          const blended = lerpPose(this._poseFrom[id], this._poseTo[id], this._poseBlend[id]);
-          // Allow step to override root while blended
+      if (!fig.visible && !(step?.cast && step.cast[id])) continue;
+      const isPrimary =
+        step?.figure === id || (!step?.figure && id === "pilot") || step?.drive?.includes?.(id);
+      const castCfg = step?.cast?.[id];
+      const driven = isPrimary || !!castCfg;
+
+      if (!driven) continue;
+
+      if ((isPrimary && step?.runCycle) || castCfg?.runCycle) {
+        fig.visible = true;
+        fig.tickRun(dt, castCfg?.runSpeed ?? step.runSpeed ?? 2.4);
+        const rootX = castCfg?.rootX ?? (isPrimary ? step.rootX : null);
+        const rootY = castCfg?.rootY ?? (isPrimary ? step.rootY : null);
+        const facing = castCfg?.facing ?? (isPrimary ? step.facing : null);
+        if (rootX != null) fig.pose.rootX = rootX;
+        if (rootY != null) fig.pose.rootY = rootY;
+        if (facing != null) fig.pose.facing = facing;
+        const scrollX = castCfg?.scrollX ?? (isPrimary ? step.scrollX : 0);
+        if (scrollX) fig.pose.rootX += scrollX * dt;
+      } else if (this._poseTo[id]) {
+        fig.visible = true;
+        const dur = this._poseBlendDur[id] || 0.35;
+        this._poseBlend[id] = Math.min(1, (this._poseBlend[id] || 0) + dt / dur);
+        const blended = lerpPose(this._poseFrom[id], this._poseTo[id], this._poseBlend[id]);
+        if (isPrimary) {
           if (step?.rootX != null) blended.rootX = step.rootX;
           if (step?.rootY != null) blended.rootY = step.rootY;
-          fig.pose = blended;
         }
+        if (castCfg?.rootX != null) blended.rootX = castCfg.rootX;
+        if (castCfg?.rootY != null) blended.rootY = castCfg.rootY;
+        fig.pose = blended;
       }
+    }
+
+    // Camera follow figure (side-scroll chase)
+    if (step?.followFigure && this.figures[step.followFigure]) {
+      const f = this.figures[step.followFigure];
+      this.camera.x = f.pose.rootX + (step.followOffsetX ?? 40);
+      this.camera.y = f.pose.rootY + (step.followOffsetY ?? -20);
     }
 
     // Continuous particle emitters (optional per-step)
