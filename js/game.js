@@ -16,6 +16,7 @@ import {
 import { getSprites, drawSprite } from "./sprites.js";
 import { loadPickupAtlas } from "./pickups.js";
 import { loadEnemyAtlas } from "./enemies.js";
+import { loadPlayerAtlas } from "./playerSprites.js";
 import {
   createJuiceState,
   addTrauma,
@@ -66,12 +67,17 @@ export class Game {
     this.sprites = getSprites();
     this.pickupAtlas = null;
     this.enemyAtlas = null;
+    this.playerAtlas = null;
     this.animTime = 0;
+    this.muzzleFlashes = [];
     loadPickupAtlas().then((atlas) => {
       this.pickupAtlas = atlas;
     });
     loadEnemyAtlas().then((atlas) => {
       this.enemyAtlas = atlas;
+    });
+    loadPlayerAtlas().then((atlas) => {
+      this.playerAtlas = atlas;
     });
     this.bindUi();
     this.bindInput();
@@ -561,6 +567,10 @@ export class Game {
     let dt = Math.min(0.05, now - (this.last || now));
     this.last = now;
     this.animTime += dt;
+    if (this.muzzleFlashes.length) {
+      for (const m of this.muzzleFlashes) m.t -= dt;
+      this.muzzleFlashes = this.muzzleFlashes.filter((m) => m.t > 0);
+    }
 
     // Freeze-frame: keep rendering juice/flash, pause simulation
     if (this.juice.hitstop > 0 && (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR)) {
@@ -736,14 +746,15 @@ export class Game {
       spawnBurst(this.particles, p.x + (Math.random() - 0.5) * 10, p.y + 22, {
         count: 1,
         speed: 50,
-        colors: ["#ffffff", "#dce6ff", "#ffb060"],
+        colors: ["#ffb040", "#ff6a30", "#ffe08a", "#ffffff"],
         life: 0.18,
-        size: 1.6,
+        size: 1.8,
         gravity: 60,
         drag: 1,
         glow: true,
         spread: 0.5,
         angle: Math.PI / 2,
+        sprite: "thrust",
       });
     }
 
@@ -768,6 +779,7 @@ export class Game {
 
     setSquash(p, 0.82, 1.22);
     spawnMuzzle(this.particles, p.x, p.y - 26);
+    this.muzzleFlashes.push({ x: p.x, y: p.y - 26, t: 0.12, weapon });
 
     if (weapon === "rocket") {
       this.bullets.push({
@@ -1541,33 +1553,66 @@ export class Game {
     const x = W / 2 + Math.sin(t * 0.8) * 30;
     const y = H * 0.58 + Math.cos(t * 1.1) * 10;
     const s = 1 + Math.sin(t * 4) * 0.03;
-    drawGlow(ctx, x, y, 80, "rgba(220,230,255,0.4)", 0.45);
-    drawSprite(ctx, this.sprites.hero, x, y, 68 * s, 68 * s);
+    drawGlow(ctx, x, y, 80, "rgba(255,200,80,0.35)", 0.45);
+    const drawn =
+      this.playerAtlas && this.playerAtlas.draw(ctx, "hero", x, y, 72 * s, 72 * s, t);
+    if (!drawn) drawSprite(ctx, this.sprites.hero, x, y, 68 * s, 68 * s);
   }
 
   drawPlayer(ctx) {
     const p = this.player;
-    const glowColor = p.invuln > 1.5 ? "rgba(255,200,120,0.5)" : "rgba(220,230,255,0.5)";
+    const glowColor = p.invuln > 1.5 ? "rgba(255,200,120,0.5)" : "rgba(255,210,100,0.42)";
     drawGlow(ctx, p.x, p.y, 95, glowColor, 0.42);
-    drawGlow(ctx, p.x, p.y + 12, 36, "rgba(180,200,255,0.35)", 0.35);
+    drawGlow(ctx, p.x, p.y + 12, 36, "rgba(255,140,60,0.3)", 0.35);
+
+    // thruster sprites behind ship
+    if (this.playerAtlas) {
+      this.playerAtlas.draw(ctx, "thrust", p.x - 8, p.y + 26, 10, 18, this.animTime, { alpha: 0.85 });
+      this.playerAtlas.draw(ctx, "thrust", p.x + 8, p.y + 26, 10, 18, this.animTime + 0.07, { alpha: 0.85 });
+    }
 
     for (const t of p.trail) {
       if (t.life <= 0) continue;
       ctx.globalAlpha = t.life * 0.75;
-      ctx.fillStyle = "#dce6ff";
+      ctx.fillStyle = "#ffb060";
       ctx.beginPath();
       ctx.arc(t.x, t.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+
+    if (p.shield > 0 && this.playerAtlas) {
+      const a = 0.25 + (p.shield / 100) * 0.45;
+      this.playerAtlas.draw(ctx, "shield_fx", p.x, p.y, 78, 78, this.animTime, { alpha: a });
+    }
+
     const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
     if (!blink) {
-      drawSprite(ctx, this.sprites.hero, p.x, p.y, 58, 58, {
-        flash: p.hitFlash > 0.05,
-        flashRed: p.hitFlash > 0 && p.hitFlash <= 0.05,
-        sx: p.sx ?? 1,
-        sy: p.sy ?? 1,
-      });
+      const drawn =
+        this.playerAtlas &&
+        this.playerAtlas.draw(ctx, "hero", p.x, p.y, 60, 60, this.animTime, {
+          flash: p.hitFlash > 0.05,
+          flashRed: p.hitFlash > 0 && p.hitFlash <= 0.05,
+          sx: p.sx ?? 1,
+          sy: p.sy ?? 1,
+        });
+      if (!drawn) {
+        drawSprite(ctx, this.sprites.hero, p.x, p.y, 58, 58, {
+          flash: p.hitFlash > 0.05,
+          flashRed: p.hitFlash > 0 && p.hitFlash <= 0.05,
+          sx: p.sx ?? 1,
+          sy: p.sy ?? 1,
+        });
+      }
+    }
+
+    for (const m of this.muzzleFlashes) {
+      if (this.playerAtlas) {
+        this.playerAtlas.draw(ctx, "muzzle", m.x, m.y, 22, 22, 1 - m.t / 0.12, {
+          alpha: Math.max(0, m.t / 0.12),
+          frame: Math.floor((1 - m.t / 0.12) * 4),
+        });
+      }
     }
   }
 
@@ -1624,23 +1669,36 @@ export class Game {
 
   drawBullets(ctx) {
     for (const b of this.bullets) {
-      const img =
+      const size =
         b.weapon === "rocket"
-          ? this.sprites.rocket
-          : b.weapon === "ion"
-            ? this.sprites.ion
-            : b.weapon === "plasma"
-              ? this.sprites.plasma
-              : this.sprites.gun;
-      if (b.weapon === "rocket") {
-        const ang = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.rotate(ang);
-        ctx.drawImage(img, -b.w / 2, -b.h / 2, b.w, b.h);
-        ctx.restore();
-      } else {
-        drawSprite(ctx, img, b.x, b.y, b.w + 4, b.h + 4);
+          ? { w: b.w + 6, h: b.h + 8 }
+          : b.weapon === "plasma"
+            ? { w: b.w + 16, h: b.h + 10 }
+            : b.weapon === "ion"
+              ? { w: b.w + 14, h: b.h + 14 }
+              : { w: b.w + 4, h: b.h + 10 };
+      const drawn =
+        this.playerAtlas &&
+        this.playerAtlas.drawWeapon(ctx, b.weapon, b.x, b.y, size.w, size.h, this.animTime + b.x * 0.01);
+      if (!drawn) {
+        const img =
+          b.weapon === "rocket"
+            ? this.sprites.rocket
+            : b.weapon === "ion"
+              ? this.sprites.ion
+              : b.weapon === "plasma"
+                ? this.sprites.plasma
+                : this.sprites.gun;
+        if (b.weapon === "rocket") {
+          const ang = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(ang);
+          ctx.drawImage(img, -b.w / 2, -b.h / 2, b.w, b.h);
+          ctx.restore();
+        } else {
+          drawSprite(ctx, img, b.x, b.y, b.w + 4, b.h + 4);
+        }
       }
     }
     for (const b of this.enemyBullets) {

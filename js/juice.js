@@ -124,7 +124,7 @@ export function spawnMuzzle(particles, x, y) {
   spawnBurst(particles, x, y, {
     count: 6,
     speed: 140,
-    colors: ["#ffffff", "#9ef7ff", "#7ec8ff"],
+    colors: ["#ffffff", "#ffe08a", "#ff8a30"],
     life: 0.12,
     size: 2.5,
     gravity: 0,

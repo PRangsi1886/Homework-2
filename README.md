@@ -37,6 +37,8 @@ Procedural synthwave BGM is the fallback when no custom track is loaded.
 
 **Enemy sprites:** Animated strips in `assets/enemies/` (`scout`, `dart`, `lancer`, `heavy`, `boss`, `finalBoss`, plus `*_alt` variants). Same horizontal-strip format — drop in replacements to use your originals.
 
+**Player / weapons / FX:** Sheets in `assets/player/` (`hero`, `gun`, `ion`, `plasma`, `rocket`, `muzzle`, `thrust`, `spark`, `shield_fx`). Replace those PNGs to swap art.
+
 ## Signature mechanics (Chromium B.S.U.–style)
 
 - **Ramming** — collisions damage both ships.
