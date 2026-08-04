@@ -243,6 +243,7 @@ export class Game {
     this.shake = 14;
 
     let bossRef = null;
+    let bossDestroyed = false;
     for (const e of this.enemies) {
       if (e.type === "boss") {
         bossRef = e;
@@ -257,11 +258,12 @@ export class Game {
       bossRef.flash = 0.25;
       if (bossRef.hp <= 0) {
         this.killEnemy(bossRef, true);
-        this.defeatBoss();
+        bossDestroyed = true;
       }
     }
 
     this.loseLife(true);
+    if (bossDestroyed && this.state !== STATES.GAME_OVER) this.defeatBoss();
   }
 
   buildLevel() {
