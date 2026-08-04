@@ -118,9 +118,11 @@ export class AudioBus {
   }
 
   async bootstrapTracks() {
-    const restored = await this.restoreCustomTrack();
-    if (restored) return;
-    await this.tryLoadBundledBgm();
+    try {
+      await this.restoreCustomTrack();
+    } catch {
+      /* ignore — fall back to procedural synth */
+    }
   }
 
   getTrackLabel() {

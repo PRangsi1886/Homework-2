@@ -129,16 +129,9 @@ export class Game {
     this.ui.volumeSlider = document.getElementById("volume-slider");
     this.ui.volumeValue = document.getElementById("volume-value");
     this.ui.volumeControl = document.getElementById("volume-control");
-    this.ui.bgmDrop = document.getElementById("bgm-drop");
-    this.ui.bgmFile = document.getElementById("bgm-file");
-    this.ui.bgmStatus = document.getElementById("bgm-status");
-    this.ui.bgmClear = document.getElementById("btn-bgm-clear");
 
     this.ui.volumeSlider.value = String(Math.round(this.audio.getVolume() * 100));
     this.syncVolumeUi();
-    this.bindBgmLoader();
-    this.audio.onTrackChange = () => this.syncBgmUi();
-    this.audio.readyPromise.then(() => this.syncBgmUi());
 
     this.ui.muteBtn.addEventListener("click", () => {
       this.audio.unlock();
@@ -164,82 +157,6 @@ export class Game {
     // Keep slider drags from steering the fighter
     for (const ev of ["pointerdown", "pointerup", "click", "mousedown", "mouseup", "touchstart"]) {
       this.ui.volumeControl.addEventListener(ev, (e) => e.stopPropagation());
-    }
-  }
-
-  bindBgmLoader() {
-    const drop = this.ui.bgmDrop;
-    const input = this.ui.bgmFile;
-    if (!drop || !input) return;
-
-    const takeFile = async (file) => {
-      if (!file) return;
-      if (!String(file.type || "").startsWith("audio/") && !/\.(mp3|ogg|wav|m4a|flac|aac)$/i.test(file.name || "")) {
-        this.ui.bgmStatus.textContent = "Please drop an audio file (mp3, ogg, wav, m4a…).";
-        this.ui.bgmStatus.classList.remove("is-ready");
-        return;
-      }
-      try {
-        this.ui.bgmStatus.textContent = `Loading ${file.name}…`;
-        this.audio.unlock();
-        const name = await this.audio.setCustomTrackFromFile(file);
-        this.audio.setMusic(this.currentMusicMode());
-        this.ui.bgmStatus.textContent = `Looping BGM ready: ${name}`;
-        this.ui.bgmStatus.classList.add("is-ready");
-        this.syncBgmUi();
-      } catch (err) {
-        this.ui.bgmStatus.textContent = "Could not load that audio file.";
-        this.ui.bgmStatus.classList.remove("is-ready");
-        console.warn(err);
-      }
-    };
-
-    input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
-      takeFile(file);
-      input.value = "";
-    });
-
-    this.ui.bgmClear?.addEventListener("click", () => {
-      this.audio.unlock();
-      this.audio.clearCustomTrack();
-      this.audio.setMusic(this.currentMusicMode());
-      this.syncBgmUi();
-    });
-
-    for (const ev of ["dragenter", "dragover"]) {
-      drop.addEventListener(ev, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        drop.classList.add("is-dragover");
-      });
-    }
-    for (const ev of ["dragleave", "drop"]) {
-      drop.addEventListener(ev, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (ev === "dragleave") drop.classList.remove("is-dragover");
-      });
-    }
-    drop.addEventListener("drop", (e) => {
-      drop.classList.remove("is-dragover");
-      const file = e.dataTransfer?.files?.[0];
-      takeFile(file);
-    });
-  }
-
-  syncBgmUi() {
-    if (!this.ui.bgmStatus) return;
-    const name = this.audio.getTrackLabel();
-    if (name) {
-      this.ui.bgmStatus.textContent = `Looping BGM ready: ${name}`;
-      this.ui.bgmStatus.classList.add("is-ready");
-      this.ui.bgmClear?.classList.remove("hidden");
-    } else {
-      this.ui.bgmStatus.textContent =
-        "Chat upload often fails for audio — drop your track here (or click Load BGM). It loops when the game starts.";
-      this.ui.bgmStatus.classList.remove("is-ready");
-      this.ui.bgmClear?.classList.add("hidden");
     }
   }
 

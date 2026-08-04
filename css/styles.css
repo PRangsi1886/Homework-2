@@ -315,45 +315,6 @@ h2 {
   color: var(--steel);
 }
 
-.bgm-drop {
-  margin-top: 22px;
-  max-width: 42ch;
-  width: min(42ch, 92%);
-  padding: 14px 16px;
-  border: 1px dashed rgba(220, 230, 255, 0.35);
-  background: rgba(8, 10, 14, 0.45);
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.bgm-drop.is-dragover {
-  border-color: rgba(232, 162, 74, 0.85);
-  background: rgba(232, 162, 74, 0.08);
-}
-
-.bgm-drop-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-.bgm-btn {
-  padding: 10px 16px;
-  font-size: 11px;
-}
-
-.bgm-status {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.35;
-  color: rgba(168, 176, 192, 0.95);
-}
-
-.bgm-status.is-ready {
-  color: var(--amber);
-}
-
 .hint {
   margin-top: 28px;
   max-width: 42ch;
