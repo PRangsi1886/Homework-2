@@ -310,7 +310,7 @@ export class Game {
     let dt = Math.min(0.05, now - (this.last || now));
     this.last = now;
 
-    if (this.state === STATES.PLAYING) {
+    if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR) {
       this.accum += dt;
       while (this.accum >= this.step) {
         this.update(this.step);
