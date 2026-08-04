@@ -478,12 +478,20 @@ export function getSprites() {
 
 export function drawSprite(ctx, img, x, y, w, h, opts = {}) {
   if (!img) return;
+  const sx = opts.sx ?? 1;
+  const sy = opts.sy ?? 1;
+  const dw = w * sx;
+  const dh = h * sy;
   ctx.save();
   if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
-  if (opts.flash) {
-    ctx.globalAlpha = (opts.alpha ?? 1) * 0.55;
-    ctx.filter = "brightness(2.2)";
+  if (opts.flash) ctx.filter = "brightness(3.2) contrast(1.15)";
+  else if (opts.flashRed) ctx.filter = "brightness(1.7) sepia(1) hue-rotate(-50deg) saturate(6)";
+  ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
+  if (opts.flash || opts.flashRed) {
+    ctx.filter = "none";
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = opts.flashRed ? 0.4 : 0.55;
+    ctx.drawImage(img, x - dw / 2, y - dh / 2, dw, dh);
   }
-  ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
   ctx.restore();
 }

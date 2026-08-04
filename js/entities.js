@@ -31,6 +31,9 @@ export function createPlayer() {
     fireCd: 0,
     trail: [],
     alive: true,
+    sx: 1,
+    sy: 1,
+    hitFlash: 0,
   };
 }
 
@@ -119,6 +122,8 @@ export function spawnEnemy(type, x, y, level) {
     phase: Math.random() * Math.PI * 2,
     age: 0,
     flash: 0,
+    sx: 1,
+    sy: 1,
   };
 }
 
@@ -144,6 +149,8 @@ export function spawnBoss(level) {
     phase: 0,
     age: 0,
     flash: 0,
+    sx: 1,
+    sy: 1,
     entered: false,
     bossPhase: 1,
     specialCd: 2.5,

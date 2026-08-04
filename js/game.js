@@ -14,6 +14,24 @@ import {
   spawnPickupAmmo,
 } from "./entities.js";
 import { getSprites, drawSprite } from "./sprites.js";
+import {
+  createJuiceState,
+  addTrauma,
+  hitStop,
+  impactFlash,
+  decayJuice,
+  shakeOffset,
+  lerpSquash,
+  setSquash,
+  spawnBurst,
+  spawnSparks,
+  spawnSmoke,
+  spawnMuzzle,
+  updateParticles,
+  drawParticles,
+  drawGlow,
+  drawPostFx,
+} from "./juice.js";
 
 const STATES = {
   TITLE: "title",
@@ -39,6 +57,7 @@ export class Game {
     this.stars = this.makeStars(120);
     this.particles = [];
     this.shake = 0;
+    this.juice = createJuiceState();
     this.selfDestructArmed = 0;
     this.message = null;
     this.cutscene = null;
@@ -141,6 +160,11 @@ export class Game {
       if (e.code === "Digit2") this.setWeapon("ion");
       if (e.code === "Digit3") this.setWeapon("plasma");
       if (e.code === "Digit4") this.setWeapon("rocket");
+      if (e.code === "KeyM") {
+        this.audio.unlock();
+        this.audio.toggleMute();
+        this.syncVolumeUi();
+      }
       if (e.code === "KeyP" || e.code === "Escape") this.togglePause();
       if (e.code === "Digit0" || e.code === "Enter" || e.code === "Numpad0") {
         this.armSelfDestruct();
@@ -339,6 +363,11 @@ export class Game {
     this.burst(p.x, p.y, "#3ef0d0", 40, 280);
     this.audio.explosion(true);
     this.shake = 14;
+    addTrauma(this.juice, 0.5);
+    hitStop(this.juice, 0.08);
+    impactFlash(this.juice, "rgba(120,255,230,0.35)", 0.35);
+    spawnSparks(this.particles, p.x, p.y, 24);
+    spawnSmoke(this.particles, p.x, p.y, 14);
 
     let bossRef = null;
     let bossDestroyed = false;
@@ -411,6 +440,15 @@ export class Game {
     let dt = Math.min(0.05, now - (this.last || now));
     this.last = now;
 
+    // Freeze-frame: keep rendering juice/flash, pause simulation
+    if (this.juice.hitstop > 0 && (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR)) {
+      decayJuice(this.juice, dt);
+      if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
+      this.draw();
+      requestAnimationFrame((nt) => this.frame(nt));
+      return;
+    }
+
     if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR) {
       this.accum += dt;
       while (this.accum >= this.step) {
@@ -420,6 +458,7 @@ export class Game {
     } else if (this.state === STATES.CUTSCENE && this.cutscene) {
       this.accum = 0;
       this.cutscene.update(dt);
+      decayJuice(this.juice, dt);
     } else {
       this.accum = 0;
       this.updateDecor(dt);
@@ -437,7 +476,8 @@ export class Game {
         s.x = Math.random() * W;
       }
     }
-    this.updateParticles(dt);
+    updateParticles(this.particles, dt);
+    decayJuice(this.juice, dt);
     if (this.message) {
       this.message.t -= dt;
       if (this.message.t <= 0) this.message = null;
@@ -447,6 +487,11 @@ export class Game {
   update(dt) {
     this.updateDecor(dt);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
+    if (this.player) {
+      lerpSquash(this.player, dt, 12);
+      if (this.player.hitFlash > 0) this.player.hitFlash -= dt;
+    }
+    for (const e of this.enemies) lerpSquash(e, dt, 10);
 
     if (this.levelPhase === "waves") this.updateWaves(dt);
     else if (this.levelPhase === "boss") this.updateBossPhase(dt);
@@ -555,6 +600,22 @@ export class Game {
     if (p.trail.length > 12) p.trail.shift();
     for (const t of p.trail) t.life -= dt;
 
+    // engine dust / thruster particles
+    if (Math.random() < 0.55) {
+      spawnBurst(this.particles, p.x + (Math.random() - 0.5) * 10, p.y + 22, {
+        count: 1,
+        speed: 50,
+        colors: ["#7ec8ff", "#ffb040", "#ffffff"],
+        life: 0.18,
+        size: 1.6,
+        gravity: 60,
+        drag: 1,
+        glow: true,
+        spread: 0.5,
+        angle: Math.PI / 2,
+      });
+    }
+
     const firing = this.mouse.down || this.keys.has("Space");
     if (firing) this.tryFire(dt);
   }
@@ -574,6 +635,9 @@ export class Game {
     }
     p.fireCd = def.rate;
 
+    setSquash(p, 0.82, 1.22);
+    spawnMuzzle(this.particles, p.x, p.y - 26);
+
     if (weapon === "rocket") {
       this.bullets.push({
         x: p.x,
@@ -592,6 +656,7 @@ export class Game {
         weapon,
       });
       this.audio.shoot("rocket");
+      addTrauma(this.juice, 0.08);
       return;
     }
 
@@ -641,16 +706,31 @@ export class Game {
       b.x += (b.vx || 0) * dt;
       b.y += b.vy * dt;
       b.life -= dt;
-      if (b.weapon === "rocket") {
-        this.particles.push({
-          x: b.x + (Math.random() - 0.5) * 4,
-          y: b.y + 10,
-          vx: (Math.random() - 0.5) * 20,
-          vy: 40 + Math.random() * 30,
-          life: 0.18,
-          max: 0.18,
-          color: Math.random() > 0.5 ? "#ffb040" : "#ff6a30",
-          size: 1.5 + Math.random() * 2,
+      if (b.weapon === "rocket" && Math.random() < 0.7) {
+        spawnBurst(this.particles, b.x, b.y + 12, {
+          count: 1,
+          speed: 30,
+          colors: ["#ffb040", "#ff6a30", "#fff2a0"],
+          life: 0.2,
+          size: 2.2,
+          gravity: -10,
+          drag: 1,
+          glow: true,
+          spread: 0.6,
+          angle: Math.PI / 2,
+        });
+      } else if (b.weapon !== "rocket" && Math.random() < 0.35) {
+        spawnBurst(this.particles, b.x, b.y + 8, {
+          count: 1,
+          speed: 20,
+          color: b.color,
+          life: 0.12,
+          size: 1.4,
+          gravity: 0,
+          drag: 2,
+          glow: true,
+          spread: 0.4,
+          angle: Math.PI / 2,
         });
       }
     }
@@ -914,8 +994,18 @@ export class Game {
         if (e.hp <= 0) continue;
         if (!aabb(b, e)) continue;
         e.hp -= b.damage;
-        e.flash = 0.08;
-        this.burst(b.x, b.y, b.color, b.weapon === "rocket" ? 18 : 4, b.weapon === "rocket" ? 200 : 80);
+        e.flash = b.weapon === "rocket" ? 0.12 : 0.07;
+        setSquash(e, 1.25, 0.75);
+        spawnSparks(this.particles, b.x, b.y, b.weapon === "rocket" ? 16 : 7);
+        if (b.weapon === "rocket") {
+          spawnSmoke(this.particles, b.x, b.y, 10);
+          addTrauma(this.juice, 0.35);
+          hitStop(this.juice, 0.07);
+          impactFlash(this.juice, "rgba(255,180,80,0.28)", 0.28);
+        } else {
+          addTrauma(this.juice, 0.06);
+        }
+        this.burst(b.x, b.y, b.color, b.weapon === "rocket" ? 18 : 5, b.weapon === "rocket" ? 220 : 100);
         if (b.splash) this.applySplash(b, e);
         if (!b.pierce) b.spent = true;
         if (e.hp <= 0) this.killEnemy(e);
@@ -941,8 +1031,13 @@ export class Game {
         const dmg = e.type === "boss" ? 28 : 18;
         this.damagePlayer(dmg);
         e.hp -= 35;
-        e.flash = 0.1;
-        this.burst((p.x + e.x) / 2, (p.y + e.y) / 2, "#fff2cc", 10, 140);
+        e.flash = 0.12;
+        setSquash(e, 1.3, 0.7);
+        setSquash(p, 1.2, 0.8);
+        spawnSparks(this.particles, (p.x + e.x) / 2, (p.y + e.y) / 2, 14);
+        addTrauma(this.juice, 0.22);
+        hitStop(this.juice, 0.05);
+        this.burst((p.x + e.x) / 2, (p.y + e.y) / 2, "#fff2cc", 12, 160);
         if (e.hp <= 0) this.killEnemy(e);
       }
     }
@@ -967,10 +1062,12 @@ export class Game {
         const falloff = 1 - d / r;
         e.hp -= (b.splashDamage || b.damage * 0.5) * falloff;
         e.flash = 0.1;
+        setSquash(e, 1.2, 0.8);
         if (e.hp <= 0) this.killEnemy(e);
       }
     }
     this.shake = Math.max(this.shake, 6);
+    spawnSparks(this.particles, b.x, b.y, 10);
     this.audio.explosion(false);
   }
 
@@ -978,8 +1075,18 @@ export class Game {
     if (e._dead) return;
     e._dead = true;
     e.hp = 0;
-    this.burst(e.x, e.y, e.color, e.type === "boss" ? 50 : 16, e.type === "boss" ? 320 : 180);
-    this.audio.explosion(e.type === "boss");
+    const big = e.type === "boss";
+    this.burst(e.x, e.y, e.color, big ? 50 : 16, big ? 320 : 180);
+    spawnSparks(this.particles, e.x, e.y, big ? 28 : 12);
+    spawnSmoke(this.particles, e.x, e.y, big ? 18 : 8);
+    addTrauma(this.juice, big ? 0.55 : 0.18);
+    if (big) {
+      hitStop(this.juice, 0.1);
+      impactFlash(this.juice, "rgba(255,220,160,0.4)", 0.4);
+    } else {
+      hitStop(this.juice, 0.035);
+    }
+    this.audio.explosion(big);
     if (!fromSuicide) {
       this.score += e.score;
       this.levelKills += 1;
@@ -1071,8 +1178,14 @@ export class Game {
     }
     if (dmg > 0) p.hull -= dmg;
     p.invuln = 0.55;
-    this.shake = 8;
-    this.burst(p.x, p.y, "#ff5a6e", 8, 100);
+    p.hitFlash = 0.1;
+    setSquash(p, 1.28, 0.72);
+    this.shake = 10;
+    addTrauma(this.juice, 0.28);
+    hitStop(this.juice, 0.055);
+    impactFlash(this.juice, "rgba(255,70,90,0.3)", 0.3);
+    spawnSparks(this.particles, p.x, p.y, 12);
+    this.burst(p.x, p.y, "#ff5a6e", 10, 120);
     if (p.hull <= 0) this.loseLife(false);
   }
 
@@ -1109,6 +1222,10 @@ export class Game {
       this.player.ammo.rocket = 3;
     }
     this.player.invuln = 2.2;
+    setSquash(this.player, 0.75, 1.35);
+    spawnSmoke(this.particles, this.player.x, this.player.y + 20, 12);
+    spawnSparks(this.particles, this.player.x, this.player.y, 10);
+    addTrauma(this.juice, 0.2);
     this.audio.launch();
     this.flashMessage("NEW FIGHTER LAUNCHED", 1.2);
 
@@ -1126,30 +1243,16 @@ export class Game {
   }
 
   burst(x, y, color, count, speed) {
-    for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const s = speed * (0.3 + Math.random() * 0.7);
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        life: 0.3 + Math.random() * 0.5,
-        max: 0.8,
-        color,
-        size: 1.5 + Math.random() * 2.5,
-      });
-    }
-  }
-
-  updateParticles(dt) {
-    for (const p of this.particles) {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 20 * dt;
-      p.life -= dt;
-    }
-    this.particles = this.particles.filter((p) => p.life > 0);
+    spawnBurst(this.particles, x, y, {
+      count,
+      speed,
+      color,
+      life: 0.45,
+      size: 2.4,
+      gravity: 30,
+      drag: 0.5,
+      glow: true,
+    });
   }
 
   syncHud() {
@@ -1172,11 +1275,13 @@ export class Game {
     const ctx = this.ctx;
     if (this.state === STATES.CUTSCENE && this.cutscene) {
       this.cutscene.draw(ctx);
+      drawPostFx(ctx, W, H, this.juice);
       return;
     }
 
-    const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0;
-    const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0;
+    const traumaShake = shakeOffset(this.juice);
+    const sx = traumaShake.x + (this.shake ? (Math.random() - 0.5) * this.shake : 0);
+    const sy = traumaShake.y + (this.shake ? (Math.random() - 0.5) * this.shake : 0);
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, sx, sy);
@@ -1211,6 +1316,10 @@ export class Game {
     ctx.fillText("COMBAT ZONE", 24, H - 28);
 
     if (this.state !== STATES.TITLE) {
+      // ambient gloom so player light reads
+      ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+      ctx.fillRect(0, 0, W, H);
+
       this.drawPowerups(ctx);
       this.drawEnemies(ctx);
       this.drawBullets(ctx);
@@ -1219,14 +1328,14 @@ export class Game {
       this.drawTitleShip(ctx);
     }
 
-    for (const p of this.particles) {
-      ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+    drawParticles(ctx, this.particles);
+
+    // soft bloom accents on bright projectiles
+    if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.PAUSED) {
+      for (const b of this.bullets) {
+        drawGlow(ctx, b.x, b.y, b.weapon === "rocket" ? 28 : 14, b.color, 0.22);
+      }
     }
-    ctx.globalAlpha = 1;
 
     if (this.boss && this.levelPhase === "boss") {
       const ratio = clamp(this.boss.hp / this.boss.maxHp, 0, 1);
@@ -1251,6 +1360,9 @@ export class Game {
     }
 
     ctx.restore();
+
+    // post passes in screen space (no shake)
+    drawPostFx(ctx, W, H, this.juice);
   }
 
   drawTitleShip(ctx) {
@@ -1263,6 +1375,10 @@ export class Game {
 
   drawPlayer(ctx) {
     const p = this.player;
+    const glowColor = p.invuln > 1.5 ? "rgba(255,220,120,0.55)" : "rgba(80,200,255,0.45)";
+    drawGlow(ctx, p.x, p.y, 90, glowColor, 0.4);
+    drawGlow(ctx, p.x, p.y + 10, 40, "rgba(255,160,60,0.35)", 0.35);
+
     for (const t of p.trail) {
       if (t.life <= 0) continue;
       ctx.globalAlpha = t.life * 0.7;
@@ -1275,7 +1391,10 @@ export class Game {
     const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
     if (!blink) {
       drawSprite(ctx, this.sprites.hero, p.x, p.y, 56, 56, {
-        flash: p.invuln > 1.5,
+        flash: p.hitFlash > 0.05,
+        flashRed: p.hitFlash > 0 && p.hitFlash <= 0.05,
+        sx: p.sx ?? 1,
+        sy: p.sy ?? 1,
       });
     }
   }
@@ -1289,8 +1408,15 @@ export class Game {
         img = e.final ? this.sprites.finalBoss : this.sprites.boss;
         w = e.w * 1.15;
         h = e.h * 1.15;
+        drawGlow(ctx, e.x, e.y, e.final ? 120 : 90, e.final ? "rgba(255,160,40,0.28)" : "rgba(255,70,90,0.25)", 0.35);
       }
-      drawSprite(ctx, img, e.x, e.y, w, h, { flash: e.flash > 0 });
+      const flashing = e.flash > 0;
+      drawSprite(ctx, img, e.x, e.y, w, h, {
+        flash: flashing && e.flash > 0.04,
+        flashRed: flashing && e.flash <= 0.04,
+        sx: e.sx ?? 1,
+        sy: e.sy ?? 1,
+      });
       if (e.hp < e.maxHp && e.type !== "boss") {
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32, 3);
