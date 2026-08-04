@@ -1,5 +1,20 @@
 import { W, H } from "./entities.js";
 
+/**
+ * Legacy beat-based cutscenes (freighter / fighter set pieces).
+ *
+ * Stick-figure timeline system (Step 1) lives in:
+ *   - js/stickFigure.js      → StickFigure, POSES, lerpPose
+ *   - js/cutsceneTimeline.js → CutsceneTimeline, createTimelineCutscene
+ *
+ * Existing game.js hooks (ready for Step 2 / 3 swap-in):
+ *   beginIntroCutscene()   → plays before Stage 1, then beginGameplay()
+ *   beginVictoryCutscene() → plays after final boss, then showVictory()
+ *
+ * To swap: replace createIntroCutscene / createVictoryCutscene bodies
+ * with createTimelineCutscene([...steps], onDone) — same update/draw/skip API.
+ */
+
 /** Canvas-driven story beats with letterbox bars and skip support. */
 export class Cutscene {
   constructor(beats, { onDone } = {}) {
