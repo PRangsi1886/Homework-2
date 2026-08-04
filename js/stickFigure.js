@@ -1,546 +1,285 @@
 /**
- * Stick-figure rig for canvas cutscenes (no external libs).
- *
- * Pose format (angles in radians, relative to parent bone):
- *   {
- *     rootX, rootY,   // hip / pelvis world position
- *     facing,         // 1 = facing right, -1 = facing left
- *     torso, head,    // torso: 0 = upright; head: relative to torso
- *     lShoulder, lElbow, rShoulder, rElbow,
- *     lHip, lKnee, rHip, rKnee,
- *     // optional extras used by cutscenes:
- *     holdPhoto,      // 0..1 — hand holds a photo prop
- *     smile,          // 0..1 — subtle head tilt / relief cue
- *   }
- *
- * Named poses live in POSES — edit angles there to retune animation.
+ * Stick-figure rig for canvas cutscenes.
+ * Pose angles in radians; legs from "straight down", arms from "straight out".
  */
 
-export const BONE = {
-  torso: 28,
-  head: 10, // radius
-  upperArm: 16,
-  lowerArm: 14,
-  upperLeg: 18,
-  lowerLeg: 16,
-};
-
-/** Default standing pose facing right. */
-export const REST_POSE = {
-  rootX: 0,
-  rootY: 0,
-  facing: 1,
-  torso: 0,
-  head: 0,
-  lShoulder: 0.35,
-  lElbow: 0.25,
-  rShoulder: -0.35,
-  rElbow: -0.25,
-  lHip: 0.12,
-  lKnee: 0.08,
-  rHip: -0.12,
-  rKnee: -0.08,
-  holdPhoto: 0,
-  smile: 0,
-};
-
-/**
- * Named poses — keys used by CutsceneTimeline steps via `pose: "idle"`.
- * Keep comments so timing/poses are easy to tweak later.
- */
 export const POSES = {
-  // Soft idle with a hint of breathing (timeline can bob rootY separately)
   idle: {
-    ...REST_POSE,
-    lShoulder: 0.4,
-    rShoulder: -0.4,
-    lHip: 0.1,
-    rHip: -0.1,
+    headTilt: 0,
+    shoulderL: 0.2,
+    shoulderR: -0.2,
+    elbowL: 0.3,
+    elbowR: -0.3,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.1,
+    kneeR: -0.1,
+    bodyLean: 0,
   },
-
-  // Mid-stride run (use with runB and time-based ping-pong)
   run: {
-    ...REST_POSE,
-    torso: 0.18,
-    head: -0.05,
-    lShoulder: -0.9,
-    lElbow: 0.7,
-    rShoulder: 0.85,
-    rElbow: 0.55,
-    lHip: -0.75,
-    lKnee: 0.95,
-    rHip: 0.7,
-    rKnee: 0.35,
+    headTilt: 0.05,
+    shoulderL: -0.9,
+    shoulderR: 0.9,
+    elbowL: -0.6,
+    elbowR: 0.6,
+    hipL: 0.8,
+    hipR: -0.8,
+    kneeL: -0.9,
+    kneeR: 0.9,
+    bodyLean: 0.15,
   },
-
-  // Opposite stride for run cycle
+  /** Opposite stride for a simple run cycle. */
   runB: {
-    ...REST_POSE,
-    torso: 0.18,
-    head: -0.05,
-    lShoulder: 0.85,
-    lElbow: 0.55,
-    rShoulder: -0.9,
-    rElbow: 0.7,
-    lHip: 0.7,
-    lKnee: 0.35,
-    rHip: -0.75,
-    rKnee: 0.95,
+    headTilt: 0.05,
+    shoulderL: 0.9,
+    shoulderR: -0.9,
+    elbowL: 0.6,
+    elbowR: -0.6,
+    hipL: -0.8,
+    hipR: 0.8,
+    kneeL: 0.9,
+    kneeR: -0.9,
+    bodyLean: 0.15,
   },
-
-  // Stops at hatch — slight lean forward
-  hatchIdle: {
-    ...REST_POSE,
-    torso: 0.08,
-    lShoulder: 0.55,
-    rShoulder: -0.2,
-    rElbow: -0.5,
-    lHip: 0.15,
-    rHip: -0.05,
+  breathHeavy: {
+    headTilt: 0.1,
+    shoulderL: 0.4,
+    shoulderR: -0.4,
+    elbowL: 0.5,
+    elbowR: -0.5,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.15,
+    kneeR: -0.15,
+    bodyLean: 0.05,
   },
-
-  // Pulls photo from jacket (right hand raised to chest)
+  reachIntoJacket: {
+    headTilt: 0.15,
+    shoulderL: 0.9,
+    shoulderR: -0.1,
+    elbowL: 1.3,
+    elbowR: -0.3,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.1,
+    kneeR: -0.1,
+    bodyLean: 0.05,
+  },
   holdPhoto: {
-    ...REST_POSE,
-    torso: 0.05,
-    head: -0.15,
-    rShoulder: -1.35,
-    rElbow: -1.6,
-    lShoulder: 0.45,
-    holdPhoto: 1,
+    headTilt: 0.2,
+    shoulderL: 0.7,
+    shoulderR: 0.7,
+    elbowL: 1.1,
+    elbowR: 1.1,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.1,
+    kneeR: -0.1,
+    bodyLean: 0,
   },
-
-  // Happier flashback pose — arm around partner cue (used with a second figure)
-  together: {
-    ...REST_POSE,
-    torso: -0.05,
-    head: 0.1,
-    smile: 1,
-    lShoulder: -0.2,
-    rShoulder: 1.1,
-    rElbow: 0.4,
-    lHip: 0.08,
-    rHip: -0.08,
-  },
-
-  // Clenches photo / determined — fists up, squared shoulders
   clenchFist: {
-    ...REST_POSE,
-    torso: -0.05,
-    head: 0.05,
-    lShoulder: -1.1,
-    lElbow: -1.4,
-    rShoulder: 1.1,
-    rElbow: 1.4,
-    holdPhoto: 0.4,
+    headTilt: -0.05,
+    shoulderL: 0.3,
+    shoulderR: -0.3,
+    elbowL: 1.2,
+    elbowR: -1.2,
+    hipL: 0,
+    hipR: 0,
+    kneeL: 0,
+    kneeR: 0,
+    bodyLean: -0.1,
   },
-
-  // Determined stance after tucking photo
-  determined: {
-    ...REST_POSE,
-    torso: -0.08,
-    head: 0.08,
-    lShoulder: -0.85,
-    lElbow: -1.2,
-    rShoulder: 0.85,
-    rElbow: 1.2,
-    lHip: 0.18,
-    rHip: -0.18,
-  },
-
-  // Lowers weapon / breathing after battle
-  lowerWeapon: {
-    ...REST_POSE,
-    torso: 0.12,
-    head: 0.05,
-    rShoulder: 0.9,
-    rElbow: 0.35,
-    lShoulder: 0.25,
-    smile: 0.2,
-  },
-
-  // Subtle smile / relief while holding photo
-  smileRelief: {
-    ...REST_POSE,
-    torso: 0.04,
-    head: 0.18,
-    smile: 1,
-    rShoulder: -1.25,
-    rElbow: -1.45,
-    lShoulder: 0.5,
-    holdPhoto: 1,
-  },
-
-  // Boss / figure collapse crumpled on the ground
   collapse: {
-    ...REST_POSE,
-    rootY: 22,
-    torso: 1.35,
-    head: 0.6,
-    lShoulder: 0.9,
-    lElbow: 1.2,
-    rShoulder: -0.5,
-    rElbow: -0.8,
-    lHip: 1.1,
-    lKnee: 1.4,
-    rHip: 0.4,
-    rKnee: 0.9,
+    headTilt: 0.6,
+    shoulderL: 1.4,
+    shoulderR: -1.4,
+    elbowL: 1.0,
+    elbowR: -1.0,
+    hipL: 0.9,
+    hipR: -0.9,
+    kneeL: 1.2,
+    kneeR: -1.2,
+    bodyLean: 0.8,
+  },
+  lowerWeapon: {
+    headTilt: 0.1,
+    shoulderL: 0.5,
+    shoulderR: -0.1,
+    elbowL: 0.7,
+    elbowR: -0.2,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.1,
+    kneeR: -0.1,
+    bodyLean: 0.05,
+  },
+  smile: {
+    // Subtle shift from idle — reads as relief without face detail
+    headTilt: -0.15,
+    shoulderL: 0.25,
+    shoulderR: -0.25,
+    elbowL: 0.35,
+    elbowR: -0.35,
+    hipL: 0.1,
+    hipR: -0.1,
+    kneeL: 0.1,
+    kneeR: -0.1,
+    bodyLean: -0.05,
   },
 };
-
-/** Love-interest silhouette defaults (longer hair line). */
-export const PARTNER_STYLE = {
-  stroke: "#e8c4d8",
-  headFill: "rgba(232, 196, 216, 0.15)",
-  lineWidth: 2.4,
-  hair: true,
-};
-
-export const PILOT_STYLE = {
-  stroke: "#dce6ff",
-  headFill: "rgba(220, 230, 255, 0.12)",
-  lineWidth: 2.6,
-  hair: false,
-};
-
-export const BOSS_STYLE = {
-  stroke: "#ff8a6a",
-  headFill: "rgba(255, 100, 80, 0.18)",
-  lineWidth: 3.2,
-  hair: false,
-};
-
-const POSE_KEYS = [
-  "rootX",
-  "rootY",
-  "facing",
-  "torso",
-  "head",
-  "lShoulder",
-  "lElbow",
-  "rShoulder",
-  "rElbow",
-  "lHip",
-  "lKnee",
-  "rHip",
-  "rKnee",
-  "holdPhoto",
-  "smile",
-];
-
-export function clamp01(v) {
-  return Math.max(0, Math.min(1, v));
-}
 
 export function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-export function easeInOutCubic(t) {
-  t = clamp01(t);
-  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-}
-
-export function easeOutCubic(t) {
-  t = clamp01(t);
-  return 1 - (1 - t) ** 3;
-}
-
-/** Resolve a pose name or pose object into a full pose. */
-export function resolvePose(pose) {
-  if (!pose) return { ...REST_POSE };
-  if (typeof pose === "string") {
-    const named = POSES[pose];
-    if (!named) {
-      console.warn(`[StickFigure] unknown pose "${pose}", using idle`);
-      return { ...POSES.idle };
-    }
-    return { ...REST_POSE, ...named };
-  }
-  return { ...REST_POSE, ...pose };
-}
-
-/** Interpolate every numeric joint field between two poses. */
-export function lerpPose(fromPose, toPose, t, ease = easeInOutCubic) {
-  const a = resolvePose(fromPose);
-  const b = resolvePose(toPose);
-  const k = ease(clamp01(t));
+export function lerpPose(poseA, poseB, t) {
   const out = {};
-  for (const key of POSE_KEYS) {
-    const av = a[key] ?? 0;
-    const bv = b[key] ?? 0;
-    // facing snaps at midpoint so limbs don't invert mid-tween oddly
-    if (key === "facing") {
-      out[key] = k < 0.5 ? av : bv;
-    } else {
-      out[key] = lerp(av, bv, k);
-    }
+  for (const key of Object.keys(poseA)) {
+    out[key] = lerp(poseA[key], poseB[key] ?? poseA[key], t);
+  }
+  for (const key of Object.keys(poseB)) {
+    if (!(key in out)) out[key] = poseB[key];
   }
   return out;
 }
 
-/**
- * Forward-kinematics: pose angles → world joint positions.
- * Hip is root; torso goes "up"; arms from shoulders; legs from hips.
- */
-export function solveSkeleton(pose) {
-  const p = resolvePose(pose);
-  const f = p.facing >= 0 ? 1 : -1;
-  const hip = { x: p.rootX, y: p.rootY };
-
-  // Torso tip ≈ shoulder center
-  const shoulder = {
-    x: hip.x + Math.sin(p.torso) * BONE.torso * f * 0.15,
-    y: hip.y - Math.cos(p.torso) * BONE.torso,
-  };
-
-  const head = {
-    x: shoulder.x + Math.sin(p.torso + p.head) * (BONE.head + 4) * f * 0.2,
-    y: shoulder.y - Math.cos(p.torso + p.head) * (BONE.head + 6),
-  };
-
-  // Arms: 0 angle = hanging down; positive swings forward relative to facing
-  const lShoulder = {
-    x: shoulder.x - 7 * f,
-    y: shoulder.y + 2,
-  };
-  const rShoulder = {
-    x: shoulder.x + 7 * f,
-    y: shoulder.y + 2,
-  };
-
-  const lElbow = {
-    x: lShoulder.x + Math.sin(p.lShoulder) * BONE.upperArm * f,
-    y: lShoulder.y + Math.cos(p.lShoulder) * BONE.upperArm,
-  };
-  const lHand = {
-    x: lElbow.x + Math.sin(p.lShoulder + p.lElbow) * BONE.lowerArm * f,
-    y: lElbow.y + Math.cos(p.lShoulder + p.lElbow) * BONE.lowerArm,
-  };
-
-  const rElbow = {
-    x: rShoulder.x + Math.sin(p.rShoulder) * BONE.upperArm * f,
-    y: rShoulder.y + Math.cos(p.rShoulder) * BONE.upperArm,
-  };
-  const rHand = {
-    x: rElbow.x + Math.sin(p.rShoulder + p.rElbow) * BONE.lowerArm * f,
-    y: rElbow.y + Math.cos(p.rShoulder + p.rElbow) * BONE.lowerArm,
-  };
-
-  // Legs: 0 = straight down
-  const lHip = { x: hip.x - 5 * f, y: hip.y };
-  const rHip = { x: hip.x + 5 * f, y: hip.y };
-
-  const lKnee = {
-    x: lHip.x + Math.sin(p.lHip) * BONE.upperLeg * f,
-    y: lHip.y + Math.cos(p.lHip) * BONE.upperLeg,
-  };
-  const lFoot = {
-    x: lKnee.x + Math.sin(p.lHip + p.lKnee) * BONE.lowerLeg * f,
-    y: lKnee.y + Math.cos(p.lHip + p.lKnee) * BONE.lowerLeg,
-  };
-
-  const rKnee = {
-    x: rHip.x + Math.sin(p.rHip) * BONE.upperLeg * f,
-    y: rHip.y + Math.cos(p.rHip) * BONE.upperLeg,
-  };
-  const rFoot = {
-    x: rKnee.x + Math.sin(p.rHip + p.rKnee) * BONE.lowerLeg * f,
-    y: rKnee.y + Math.cos(p.rHip + p.rKnee) * BONE.lowerLeg,
-  };
-
-  return {
-    hip,
-    shoulder,
-    head,
-    lShoulder,
-    lElbow,
-    lHand,
-    rShoulder,
-    rElbow,
-    rHand,
-    lHip,
-    lKnee,
-    lFoot,
-    rHip,
-    rKnee,
-    rFoot,
-    holdPhoto: p.holdPhoto,
-    smile: p.smile,
-    facing: f,
-  };
+export function resolvePose(pose) {
+  if (!pose) return { ...POSES.idle };
+  if (typeof pose === "string") return { ...(POSES[pose] || POSES.idle) };
+  return { ...POSES.idle, ...pose };
 }
 
-/** Draw a small photo prop (two stick silhouettes) near a hand. */
-export function drawPhotoProp(ctx, x, y, scale = 1) {
-  const w = 22 * scale;
-  const h = 16 * scale;
+function drawPhotoProp(ctx, x, y, scale) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = "#f4efe4";
-  ctx.strokeStyle = "#c8b89a";
-  ctx.lineWidth = 1;
-  ctx.fillRect(-w / 2, -h / 2, w, h);
-  ctx.strokeRect(-w / 2, -h / 2, w, h);
-  // Tiny stick couple inside the photo
-  ctx.strokeStyle = "#3a4050";
-  ctx.lineWidth = 1.2;
-  // pilot
+  ctx.rotate(-0.15);
+  ctx.fillStyle = "#e8dcc8";
+  ctx.strokeStyle = "#8a7050";
+  ctx.lineWidth = 1.2 * scale;
+  ctx.fillRect(-7 * scale, -9 * scale, 14 * scale, 16 * scale);
+  ctx.strokeRect(-7 * scale, -9 * scale, 14 * scale, 16 * scale);
+  ctx.fillStyle = "#6a8ab0";
   ctx.beginPath();
-  ctx.arc(-4 * scale, -2 * scale, 2 * scale, 0, Math.PI * 2);
-  ctx.moveTo(-4 * scale, 0);
-  ctx.lineTo(-4 * scale, 5 * scale);
-  ctx.moveTo(-6 * scale, 2 * scale);
-  ctx.lineTo(-2 * scale, 2 * scale);
-  ctx.stroke();
-  // partner with hair flick
+  ctx.arc(-1 * scale, -2 * scale, 2.5 * scale, 0, Math.PI * 2);
+  ctx.arc(3 * scale, -1 * scale, 2.2 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#4a6a40";
   ctx.beginPath();
-  ctx.arc(4 * scale, -2 * scale, 2 * scale, 0, Math.PI * 2);
-  ctx.moveTo(4 * scale, 0);
-  ctx.lineTo(4 * scale, 5 * scale);
-  ctx.moveTo(2 * scale, 2 * scale);
-  ctx.lineTo(6 * scale, 2 * scale);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(5.5 * scale, -3 * scale);
-  ctx.quadraticCurveTo(8 * scale, -1 * scale, 6 * scale, 1 * scale);
-  ctx.stroke();
+  ctx.moveTo(-5 * scale, 4 * scale);
+  ctx.quadraticCurveTo(0, 1 * scale, 5 * scale, 5 * scale);
+  ctx.lineTo(5 * scale, 6 * scale);
+  ctx.lineTo(-5 * scale, 6 * scale);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
 }
 
 export class StickFigure {
   /**
-   * @param {object} [opts]
-   * @param {object} [opts.style] stroke/fill options (PILOT_STYLE, etc.)
-   * @param {object|string} [opts.pose] initial pose
-   * @param {number} [opts.scale] draw scale
+   * @param {object} opts
+   * @param {number} [opts.x] root x (hip)
+   * @param {number} [opts.y] root y (hip)
+   * @param {number} [opts.scale]
+   * @param {string} [opts.color]
+   * @param {number} [opts.limbLength]
+   * @param {boolean} [opts.visible]
+   * @param {boolean} [opts.showPhoto] draw photo prop at right hand
    */
-  constructor(opts = {}) {
-    this.style = { ...PILOT_STYLE, ...(opts.style || {}) };
-    this.pose = resolvePose(opts.pose || "idle");
-    this.scale = opts.scale ?? 1;
-    this.visible = opts.visible !== false;
-    // For run cycles: blend between run / runB
-    this.runPhase = 0;
+  constructor({
+    x = 0,
+    y = 0,
+    scale = 1,
+    color = "#eef4ff",
+    limbLength = 30,
+    visible = true,
+    showPhoto = false,
+  } = {}) {
+    this.x = x;
+    this.y = y;
+    this.scale = scale;
+    this.color = color;
+    this.limbLength = limbLength;
+    this.visible = visible;
+    this.showPhoto = showPhoto;
+    this.pose = { ...POSES.idle };
+    this._runPhase = 0;
   }
 
   setPose(pose) {
-    this.pose = resolvePose(pose);
+    this.pose = typeof pose === "string" ? resolvePose(pose) : { ...pose };
   }
 
-  /** Smoothly blend toward a named/object pose (mutates this.pose). */
-  blendToward(pose, t, ease) {
-    this.pose = lerpPose(this.pose, pose, t, ease);
-  }
-
-  /**
-   * Advance a run cycle. Call each frame while running.
-   * @param {number} dt
-   * @param {number} [speed] cycles per second
-   */
+  /** Advance a ping-pong run cycle into this.pose. */
   tickRun(dt, speed = 2.4) {
-    this.runPhase = (this.runPhase + dt * speed) % 1;
-    const a = this.runPhase < 0.5 ? this.runPhase * 2 : (1 - this.runPhase) * 2;
-    this.pose = lerpPose("run", "runB", a, (t) => t);
-  }
-
-  /** World-space skeleton for the current pose. */
-  skeleton() {
-    const scaled = { ...this.pose, rootX: this.pose.rootX, rootY: this.pose.rootY };
-    return solveSkeleton(scaled);
+    this._runPhase += dt * speed;
+    const u = (Math.sin(this._runPhase * Math.PI) + 1) * 0.5;
+    this.pose = lerpPose(POSES.run, POSES.runB, u);
   }
 
   draw(ctx) {
     if (!this.visible) return;
-    const sk = this.skeleton();
-    const { stroke, headFill, lineWidth, hair } = this.style;
     const s = this.scale;
-    const ox = this.pose.rootX;
-    const oy = this.pose.rootY;
-
-    // Scale limb lengths around the hip root
-    const map = (pt) => ({
-      x: ox + (pt.x - ox) * s,
-      y: oy + (pt.y - oy) * s,
-    });
-
-    const hip = map(sk.hip);
-    const shoulder = map(sk.shoulder);
-    const head = map(sk.head);
-    const lShoulder = map(sk.lShoulder);
-    const lElbow = map(sk.lElbow);
-    const lHand = map(sk.lHand);
-    const rShoulder = map(sk.rShoulder);
-    const rElbow = map(sk.rElbow);
-    const rHand = map(sk.rHand);
-    const lHip = map(sk.lHip);
-    const lKnee = map(sk.lKnee);
-    const lFoot = map(sk.lFoot);
-    const rHip = map(sk.rHip);
-    const rKnee = map(sk.rKnee);
-    const rFoot = map(sk.rFoot);
+    const L = this.limbLength * s;
+    const p = this.pose;
 
     ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(p.bodyLean * 0.3);
+    ctx.strokeStyle = this.color;
+    ctx.fillStyle = this.color;
+    ctx.lineWidth = 3 * s;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = lineWidth * Math.max(0.75, s);
-    ctx.fillStyle = headFill;
 
-    const line = (a, b) => {
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    };
-
-    // Legs
-    line(lHip, lKnee);
-    line(lKnee, lFoot);
-    line(rHip, rKnee);
-    line(rKnee, rFoot);
-
-    // Torso
-    line(hip, shoulder);
-
-    // Arms
-    line(lShoulder, lElbow);
-    line(lElbow, lHand);
-    line(rShoulder, rElbow);
-    line(rElbow, rHand);
-
-    // Head
-    const headR = BONE.head * s * (0.85 + (sk.smile || 0) * 0.08);
+    const torsoLen = L * 1.4;
+    const shoulderX = 0;
+    const shoulderY = -torsoLen;
     ctx.beginPath();
-    ctx.arc(head.x, head.y, headR, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(shoulderX, shoulderY);
     ctx.stroke();
 
-    // Partner hair silhouette
-    if (hair) {
-      ctx.beginPath();
-      ctx.moveTo(head.x + 4 * sk.facing * s, head.y - 2 * s);
-      ctx.quadraticCurveTo(
-        head.x + 14 * sk.facing * s,
-        head.y + 4 * s,
-        head.x + 8 * sk.facing * s,
-        head.y + 14 * s
-      );
-      ctx.stroke();
-    }
+    const headR = L * 0.35;
+    const headX = shoulderX + Math.sin(p.headTilt) * headR;
+    const headY = shoulderY - headR - Math.cos(p.headTilt) * headR * 0.35;
+    ctx.beginPath();
+    ctx.arc(headX, headY - headR * 0.65, headR, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // Optional smile cue — tiny arc
-    if ((sk.smile || 0) > 0.4) {
-      ctx.beginPath();
-      ctx.arc(head.x, head.y + 2 * s, 3.5 * s, 0.15 * Math.PI, 0.85 * Math.PI);
-      ctx.stroke();
-    }
+    const rightHand = this._drawLimb(
+      ctx,
+      shoulderX,
+      shoulderY,
+      p.shoulderR,
+      p.elbowR,
+      L * 0.6,
+      L * 0.6
+    );
+    this._drawLimb(ctx, shoulderX, shoulderY, p.shoulderL, p.elbowL, L * 0.6, L * 0.6);
+    this._drawLimb(ctx, 0, 0, p.hipL, p.kneeL, L * 0.7, L * 0.7);
+    this._drawLimb(ctx, 0, 0, p.hipR, p.kneeR, L * 0.7, L * 0.7);
 
-    // Photo prop in the raised hand (prefer right hand)
-    if ((sk.holdPhoto || 0) > 0.2) {
-      drawPhotoProp(ctx, rHand.x, rHand.y - 6 * s, (0.85 + sk.holdPhoto * 0.25) * s);
+    if (this.showPhoto && rightHand) {
+      drawPhotoProp(ctx, rightHand.x, rightHand.y - 4 * s, s * 0.9);
     }
 
     ctx.restore();
   }
+
+  _drawLimb(ctx, ox, oy, angle1, angle2, len1, len2) {
+    const midX = ox + Math.sin(angle1) * len1;
+    const midY = oy + Math.cos(angle1) * len1;
+    const endX = midX + Math.sin(angle1 + angle2) * len2;
+    const endY = midY + Math.cos(angle1 + angle2) * len2;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(midX, midY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    return { x: endX, y: endY };
+  }
 }
+
+export const PILOT_COLOR = "#eef4ff";
+export const LOVE_COLOR = "#ffc8a0";
+export const BOSS_COLOR = "#ff6a7a";

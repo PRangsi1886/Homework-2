@@ -289,7 +289,7 @@ export class Game {
   }
 
   beginIntroCutscene() {
-    // Hook: before Stage 1 — Escape stick-figure beat sheet (storyBeats.js).
+    // Hook: before Stage 1 — Escape cutscene (cutscenes.js / stick-figure timeline).
     this.cutscene = createIntroCutscene(() => this.beginGameplay());
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
@@ -298,7 +298,7 @@ export class Game {
   }
 
   beginVictoryCutscene() {
-    // Hook: after final boss — Victory stick-figure beat sheet (storyBeats.js).
+    // Hook: after final boss — Victory cutscene (cutscenes.js / stick-figure timeline).
     this.cutscene = createVictoryCutscene(this.score, () => this.showVictory());
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
