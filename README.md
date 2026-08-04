@@ -33,6 +33,8 @@ If chat file upload fails, use the in-game loader — do not rely on dragging au
 
 Procedural synthwave BGM is the fallback when no custom track is loaded.
 
+**Pickup sprites:** Animated strips live in `assets/pickups/` (`shield`, `repair`, `super`, `rocket`, `ammo`, plus optional `*_alt` variants). Horizontal sheets; frame size = sheet height. Replace those PNGs with your own to swap art.
+
 ## Signature mechanics (Chromium B.S.U.–style)
 
 - **Ramming** — collisions damage both ships.

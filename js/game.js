@@ -14,6 +14,7 @@ import {
   spawnPickupAmmo,
 } from "./entities.js";
 import { getSprites, drawSprite } from "./sprites.js";
+import { loadPickupAtlas } from "./pickups.js";
 import {
   createJuiceState,
   addTrauma,
@@ -62,6 +63,11 @@ export class Game {
     this.message = null;
     this.cutscene = null;
     this.sprites = getSprites();
+    this.pickupAtlas = null;
+    this.animTime = 0;
+    loadPickupAtlas().then((atlas) => {
+      this.pickupAtlas = atlas;
+    });
     this.bindUi();
     this.bindInput();
     this.resetRun();
@@ -549,6 +555,7 @@ export class Game {
     const now = t * 0.001;
     let dt = Math.min(0.05, now - (this.last || now));
     this.last = now;
+    this.animTime += dt;
 
     // Freeze-frame: keep rendering juice/flash, pause simulation
     if (this.juice.hitstop > 0 && (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR)) {
@@ -1097,6 +1104,7 @@ export class Game {
     const kept = [];
     for (const p of this.powerups) {
       p.y += p.vy * dt;
+      p.bob = (p.bob || 0) + dt * 4;
       if (p.y - p.h / 2 > H) {
           if (p.type === "super") {
             this.lives += 1;
@@ -1625,15 +1633,25 @@ export class Game {
 
   drawPowerups(ctx) {
     for (const p of this.powerups) {
-      const map = {
-        shield: this.sprites.powerShield,
-        repair: this.sprites.powerRepair,
-        super: this.sprites.powerSuper,
-        ammo: this.sprites.powerAmmo,
-        rocket: this.sprites.powerRocket,
-      };
-      const img = map[p.type] || this.sprites.powerAmmo;
-      drawSprite(ctx, img, p.x, p.y, 32, 32);
+      const bobY = Math.sin(p.bob || 0) * 3;
+      const size = p.type === "ammo" ? 36 : 38;
+      const drawn =
+        this.pickupAtlas &&
+        this.pickupAtlas.draw(ctx, p.type, p.x, p.y + bobY, size, size, this.animTime + (p.bob || 0) * 0.15, {
+          variant: p.variant || 0,
+          fps: 12,
+        });
+      if (!drawn) {
+        const map = {
+          shield: this.sprites.powerShield,
+          repair: this.sprites.powerRepair,
+          super: this.sprites.powerSuper,
+          ammo: this.sprites.powerAmmo,
+          rocket: this.sprites.powerRocket,
+        };
+        const img = map[p.type] || this.sprites.powerAmmo;
+        drawSprite(ctx, img, p.x, p.y + bobY, 32, 32);
+      }
     }
   }
 }
