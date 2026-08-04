@@ -52,7 +52,7 @@
           <button id="btn-start" class="btn primary">Launch Sortie</button>
           <button id="btn-how" class="btn ghost">Briefing</button>
         </div>
-        <p class="hint">Mouse / WASD to move · Hold click or Space to fire · 1–4 weapons · 0 self-destruct</p>
+        <p class="hint">Mouse / WASD to move · Hold click or Space to fire · 1–4 weapons · 0 self-destruct · M mute</p>
       </section>
 
       <section id="briefing-screen" class="overlay hidden">
@@ -96,6 +96,20 @@
         <h2 id="level-clear-title">Sector Cleared</h2>
         <p class="tagline" id="level-clear-sub">Next wave inbound…</p>
       </section>
+
+      <div id="volume-control" class="volume-control" aria-label="Volume controls">
+        <button id="btn-mute" class="volume-mute" type="button" aria-pressed="false" title="Mute">VOL</button>
+        <input
+          id="volume-slider"
+          class="volume-slider"
+          type="range"
+          min="0"
+          max="100"
+          value="70"
+          aria-label="Volume"
+        />
+        <span id="volume-value" class="volume-value">70</span>
+      </div>
     </div>
 
     <script type="module" src="js/main.js"></script>

@@ -24,6 +24,8 @@ Then visit `http://localhost:8080`.
 | `0` or Enter twice | Self-destruct (eject ammo, clear sky) |
 | Right-click twice | Self-destruct |
 | `P` / Esc | Pause |
+| `M` | Mute / unmute |
+| Volume slider (bottom-left) | Adjust master volume |
 
 ## Signature mechanics (Chromium B.S.U.–style)
 

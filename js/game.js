@@ -88,6 +88,42 @@ export class Game {
       this.ui.briefing.classList.add("hidden");
       this.ui.title.classList.remove("hidden");
     });
+
+    this.ui.muteBtn = document.getElementById("btn-mute");
+    this.ui.volumeSlider = document.getElementById("volume-slider");
+    this.ui.volumeValue = document.getElementById("volume-value");
+    this.ui.volumeControl = document.getElementById("volume-control");
+
+    this.ui.volumeSlider.value = String(Math.round(this.audio.getVolume() * 100));
+    this.syncVolumeUi();
+
+    this.ui.muteBtn.addEventListener("click", () => {
+      this.audio.unlock();
+      this.audio.toggleMute();
+      this.syncVolumeUi();
+    });
+    const onVolumeInput = () => {
+      this.audio.unlock();
+      this.audio.setVolume(Number(this.ui.volumeSlider.value) / 100);
+      this.syncVolumeUi();
+    };
+    this.ui.volumeSlider.addEventListener("input", onVolumeInput);
+    this.ui.volumeSlider.addEventListener("change", onVolumeInput);
+    // Keep slider drags from steering the fighter
+    for (const ev of ["pointerdown", "pointerup", "click", "mousedown", "mouseup", "touchstart"]) {
+      this.ui.volumeControl.addEventListener(ev, (e) => e.stopPropagation());
+    }
+  }
+
+  syncVolumeUi() {
+    const pct = Math.round(this.audio.getVolume() * 100);
+    const muted = this.audio.muted;
+    this.ui.volumeSlider.value = String(pct);
+    this.ui.volumeValue.textContent = muted ? "OFF" : String(pct);
+    this.ui.muteBtn.classList.toggle("is-muted", muted || pct === 0);
+    this.ui.muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+    this.ui.muteBtn.textContent = muted || pct === 0 ? "MUTE" : "VOL";
+    this.ui.muteBtn.title = muted ? "Unmute" : "Mute";
   }
 
   bindInput() {
@@ -1172,7 +1208,7 @@ export class Game {
     ctx.setLineDash([]);
     ctx.fillStyle = "rgba(255, 90, 110, 0.55)";
     ctx.font = "600 12px Rajdhani";
-    ctx.fillText("FREIGHTER LINE — DO NOT LET THEM PASS", 24, H - 28);
+    ctx.fillText("COMBAT ZONE", 24, H - 28);
 
     if (this.state !== STATES.TITLE) {
       this.drawPowerups(ctx);

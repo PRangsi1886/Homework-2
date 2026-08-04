@@ -1,9 +1,30 @@
+const STORAGE_KEY = "ferrum-wing-volume";
+const MUTE_KEY = "ferrum-wing-muted";
+const BASE_GAIN = 0.22;
+
 /** Lightweight Web Audio synth for arcade feedback. */
 export class AudioBus {
   constructor() {
     this.ctx = null;
     this.enabled = true;
     this.master = null;
+    this.volume = this.loadVolume();
+    this.muted = this.loadMuted();
+  }
+
+  loadVolume() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const v = raw == null ? 0.7 : Number(raw);
+    return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.7;
+  }
+
+  loadMuted() {
+    return localStorage.getItem(MUTE_KEY) === "1";
+  }
+
+  persist() {
+    localStorage.setItem(STORAGE_KEY, String(this.volume));
+    localStorage.setItem(MUTE_KEY, this.muted ? "1" : "0");
   }
 
   unlock() {
@@ -15,8 +36,42 @@ export class AudioBus {
     }
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.22;
+    this.applyGain();
     this.master.connect(this.ctx.destination);
+  }
+
+  applyGain() {
+    if (!this.master) return;
+    const value = this.muted ? 0 : BASE_GAIN * this.volume;
+    const t = this.ctx?.currentTime ?? 0;
+    this.master.gain.cancelScheduledValues(t);
+    this.master.gain.setTargetAtTime(value, t, 0.02);
+  }
+
+  setVolume(v) {
+    this.volume = Math.max(0, Math.min(1, Number(v) || 0));
+    if (this.volume > 0 && this.muted) this.muted = false;
+    this.applyGain();
+    this.persist();
+  }
+
+  getVolume() {
+    return this.volume;
+  }
+
+  setMuted(muted) {
+    this.muted = !!muted;
+    this.applyGain();
+    this.persist();
+  }
+
+  toggleMute() {
+    this.setMuted(!this.muted);
+    return this.muted;
+  }
+
+  isMuted() {
+    return this.muted || this.volume <= 0;
   }
 
   resume() {
@@ -24,7 +79,7 @@ export class AudioBus {
   }
 
   tone(freq, duration, type = "square", gain = 0.2, slide = 0) {
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.isMuted()) return;
     this.resume();
     const t0 = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
@@ -41,7 +96,7 @@ export class AudioBus {
   }
 
   noise(duration, gain = 0.15) {
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.isMuted()) return;
     this.resume();
     const t0 = this.ctx.currentTime;
     const len = Math.floor(this.ctx.sampleRate * duration);
