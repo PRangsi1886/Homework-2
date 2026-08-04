@@ -27,7 +27,11 @@ Then visit `http://localhost:8080`.
 | `M` | Mute / unmute |
 | Volume slider (bottom-left) | Adjust master volume (SFX + BGM) |
 
-Procedural synthwave BGM shifts with title, cutscenes, combat, boss fights, and victory.
+**Custom BGM:** On the title screen, use **Load BGM** or drop an audio file onto the drop zone. It loops from game start and respects mute/volume. The track is saved in your browser (IndexedDB) for later visits. You can also place `assets/bgm.mp3` (or `.ogg` / `.wav` / `.m4a`) in the repo.
+
+If chat file upload fails, use the in-game loader — do not rely on dragging audio into the agent chat.
+
+Procedural synthwave BGM is the fallback when no custom track is loaded.
 
 ## Signature mechanics (Chromium B.S.U.–style)
 

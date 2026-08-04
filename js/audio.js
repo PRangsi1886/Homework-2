@@ -1,6 +1,16 @@
 const STORAGE_KEY = "ferrum-wing-volume";
 const MUTE_KEY = "ferrum-wing-muted";
+const BGM_DB = "ferrum-wing-bgm";
+const BGM_STORE = "tracks";
+const BGM_KEY = "custom";
 const BASE_GAIN = 0.55;
+const BUNDLED_BGM = [
+  "assets/bgm.mp3",
+  "assets/bgm.ogg",
+  "assets/bgm.wav",
+  "assets/bgm.m4a",
+  "assets/bgm.flac",
+];
 
 const NOTE = {
   C2: 65.41,
@@ -51,24 +61,24 @@ const TRACKS = {
     intensity: 0.45,
   },
   combat: {
-    bpm: 128,
+    bpm: 140,
     swing: 0.05,
     bass: [NOTE.A2, NOTE.A2, 0, NOTE.A2, NOTE.G2, NOTE.G2, 0, NOTE.G2, NOTE.F2, NOTE.F2, 0, NOTE.F2, NOTE.E2, NOTE.E2, NOTE.G2, NOTE.A2],
     arp: [NOTE.A3, NOTE.C4, NOTE.E4, NOTE.A4, NOTE.A3, NOTE.C4, NOTE.G4, NOTE.E4, NOTE.F3, NOTE.A3, NOTE.C4, NOTE.F4, NOTE.E3, NOTE.G3, NOTE.B3, NOTE.E4],
     lead: [NOTE.A4, 0, NOTE.E4, 0, NOTE.C5, 0, NOTE.A4, 0, NOTE.G4, 0, NOTE.E4, NOTE.G4, 0, NOTE.A4, 0, 0],
     pad: [NOTE.A3, NOTE.C4, NOTE.E4],
     drums: true,
-    intensity: 0.85,
+    intensity: 0.95,
   },
   boss: {
-    bpm: 144,
+    bpm: 158,
     swing: 0.03,
     bass: [NOTE.E2, NOTE.E2, NOTE.E2, 0, NOTE.F2, NOTE.F2, 0, NOTE.G2, NOTE.E2, NOTE.E2, NOTE.E2, 0, NOTE.D2, NOTE.D2, NOTE.F2, NOTE.E2],
     arp: [NOTE.E4, NOTE.G4, NOTE.Bb4, NOTE.E5, NOTE.E4, NOTE.G4, NOTE.D5, NOTE.Bb4, NOTE.F4, NOTE.A4, NOTE.C5, NOTE.F5, NOTE.E4, NOTE.G4, NOTE.B4, NOTE.E5],
     lead: [NOTE.E5, NOTE.Bb4, 0, NOTE.G4, NOTE.E5, 0, NOTE.F5, 0, NOTE.E5, NOTE.D5, 0, NOTE.Bb4, NOTE.G4, 0, NOTE.E4, 0],
     pad: [NOTE.E3, NOTE.G3, NOTE.Bb3],
     drums: true,
-    intensity: 1,
+    intensity: 1.15,
   },
   victory: {
     bpm: 110,
@@ -82,7 +92,7 @@ const TRACKS = {
   },
 };
 
-/** Lightweight Web Audio synth + procedural BGM for Ferrum Wing. */
+/** Lightweight Web Audio synth + optional looping file BGM for Ferrum Wing. */
 export class AudioBus {
   constructor() {
     this.ctx = null;
@@ -98,6 +108,27 @@ export class AudioBus {
     this.nextNoteTime = 0;
     this.step = 0;
     this.padNodes = null;
+    this.trackEl = null;
+    this.trackNode = null;
+    this.trackUrl = null;
+    this.trackName = null;
+    this.usingFileTrack = false;
+    this.onTrackChange = null;
+    this.readyPromise = this.bootstrapTracks();
+  }
+
+  async bootstrapTracks() {
+    const restored = await this.restoreCustomTrack();
+    if (restored) return;
+    await this.tryLoadBundledBgm();
+  }
+
+  getTrackLabel() {
+    return this.trackName;
+  }
+
+  hasCustomTrack() {
+    return !!this.trackUrl;
   }
 
   loadVolume() {
@@ -118,6 +149,7 @@ export class AudioBus {
   unlock() {
     if (this.ctx) {
       this.resume();
+      this.syncFileTrackPlayback();
       return;
     }
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -130,10 +162,11 @@ export class AudioBus {
     this.sfxGain = this.ctx.createGain();
     this.musicGain = this.ctx.createGain();
     this.sfxGain.gain.value = 1;
-    this.musicGain.gain.value = 0.42;
+    this.musicGain.gain.value = 0.55;
     this.sfxGain.connect(this.master);
     this.musicGain.connect(this.master);
     this.master.connect(this.ctx.destination);
+    this.wireTrackElement();
     this.applyGain();
     this.resume();
     if (!this.musicPlaying) this.setMusic(this.musicMode || "title");
@@ -145,6 +178,7 @@ export class AudioBus {
     const t = this.ctx?.currentTime ?? 0;
     this.master.gain.cancelScheduledValues(t);
     this.master.gain.setTargetAtTime(value, t, 0.02);
+    this.syncFileTrackPlayback();
   }
 
   setVolume(v) {
@@ -152,7 +186,9 @@ export class AudioBus {
     if (this.volume > 0 && this.muted) this.muted = false;
     this.applyGain();
     this.persist();
-    if (!this.muted && this.ctx && !this.musicPlaying) this.setMusic(this.musicMode);
+    if (!this.muted && this.ctx && !this.musicPlaying && !this.usingFileTrack) {
+      this.setMusic(this.musicMode);
+    }
   }
 
   getVolume() {
@@ -225,12 +261,251 @@ export class AudioBus {
     src.start(t0);
   }
 
+  // --- File / custom BGM ------------------------------------------------
+
+  wireTrackElement() {
+    if (!this.ctx || !this.musicGain || this.trackNode) return;
+    if (!this.trackEl) {
+      this.trackEl = new Audio();
+      this.trackEl.loop = true;
+      this.trackEl.preload = "auto";
+      this.trackEl.crossOrigin = "anonymous";
+    }
+    try {
+      this.trackNode = this.ctx.createMediaElementSource(this.trackEl);
+      this.trackNode.connect(this.musicGain);
+    } catch {
+      /* already wired */
+    }
+  }
+
+  usesFileForMode(mode = this.musicMode) {
+    if (!this.trackUrl) return false;
+    // Custom track covers title + combat intensity; keep short victory cue synth-only.
+    return mode !== "victory";
+  }
+
+  syncFileTrackPlayback() {
+    if (!this.trackEl || !this.trackUrl) return;
+    if (this.usingFileTrack && !this.muted && this.volume > 0) {
+      const play = this.trackEl.play();
+      if (play?.catch) play.catch(() => {});
+    } else {
+      this.trackEl.pause();
+    }
+  }
+
+  async tryLoadBundledBgm() {
+    for (const url of BUNDLED_BGM) {
+      const ok = await this.urlExists(url);
+      if (!ok) continue;
+      await this.setCustomTrackFromUrl(url, url.split("/").pop());
+      return true;
+    }
+    return false;
+  }
+
+  urlExists(url) {
+    return new Promise((resolve) => {
+      const probe = new Audio();
+      const done = (value) => {
+        probe.onloadedmetadata = null;
+        probe.onerror = null;
+        probe.removeAttribute("src");
+        probe.load();
+        resolve(value);
+      };
+      probe.preload = "metadata";
+      probe.onloadedmetadata = () => done(true);
+      probe.onerror = () => done(false);
+      probe.src = url;
+    });
+  }
+
+  async setCustomTrackFromFile(file) {
+    if (!file) throw new Error("No audio file selected");
+    const blob = file instanceof Blob ? file : null;
+    if (!blob) throw new Error("Invalid audio file");
+    const name = file.name || "Custom BGM";
+    await this.persistCustomTrack(blob, name);
+    const url = URL.createObjectURL(blob);
+    await this.applyTrackUrl(url, name, true);
+    return name;
+  }
+
+  async setCustomTrackFromUrl(url, name = "Bundled BGM") {
+    await this.applyTrackUrl(url, name, false);
+    return name;
+  }
+
+  async applyTrackUrl(url, name, revokePreviousObjectUrl) {
+    if (revokePreviousObjectUrl && this.trackUrl && this.trackUrl.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(this.trackUrl);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!this.trackEl) {
+      this.trackEl = new Audio();
+      this.trackEl.loop = true;
+      this.trackEl.preload = "auto";
+      this.trackEl.crossOrigin = "anonymous";
+    }
+    this.trackUrl = url;
+    this.trackName = name;
+    this.trackEl.loop = true;
+    this.trackEl.src = url;
+    try {
+      this.trackEl.load();
+    } catch {
+      /* ignore */
+    }
+    if (this.ctx) this.wireTrackElement();
+    this.notifyTrackChange();
+    if (this.ctx) this.setMusic(this.musicMode);
+  }
+
+  clearCustomTrack() {
+    this.pauseFileTrack();
+    if (this.trackUrl?.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(this.trackUrl);
+      } catch {
+        /* ignore */
+      }
+    }
+    this.trackUrl = null;
+    this.trackName = null;
+    if (this.trackEl) {
+      this.trackEl.removeAttribute("src");
+      try {
+        this.trackEl.load();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.clearPersistedTrack();
+    this.notifyTrackChange();
+    if (this.ctx) this.setMusic(this.musicMode);
+  }
+
+  notifyTrackChange() {
+    if (typeof this.onTrackChange === "function") this.onTrackChange(this.trackName);
+  }
+
+  openDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        resolve(null);
+        return;
+      }
+      const req = indexedDB.open(BGM_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(BGM_STORE)) db.createObjectStore(BGM_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    });
+  }
+
+  async persistCustomTrack(blob, name) {
+    const db = await this.openDb();
+    if (!db) return;
+    await new Promise((resolve) => {
+      try {
+        const tx = db.transaction(BGM_STORE, "readwrite");
+        tx.objectStore(BGM_STORE).put({ blob, name, savedAt: Date.now() }, BGM_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+    db.close();
+  }
+
+  async clearPersistedTrack() {
+    const db = await this.openDb();
+    if (!db) return;
+    await new Promise((resolve) => {
+      try {
+        const tx = db.transaction(BGM_STORE, "readwrite");
+        tx.objectStore(BGM_STORE).delete(BGM_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+    db.close();
+  }
+
+  async restoreCustomTrack() {
+    const db = await this.openDb();
+    if (!db) return false;
+    const record = await new Promise((resolve) => {
+      try {
+        const tx = db.transaction(BGM_STORE, "readonly");
+        const req = tx.objectStore(BGM_STORE).get(BGM_KEY);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+    db.close();
+    if (!record?.blob) return false;
+    const url = URL.createObjectURL(record.blob);
+    await this.applyTrackUrl(url, record.name || "Custom BGM", false);
+    return true;
+  }
+
+  pauseFileTrack() {
+    this.usingFileTrack = false;
+    if (this.trackEl) {
+      try {
+        this.trackEl.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  startFileTrack() {
+    if (!this.trackUrl || !this.trackEl) return false;
+    this.usingFileTrack = true;
+    this.stopSynthMusic();
+    if (this.ctx) this.wireTrackElement();
+    this.resume();
+    this.syncFileTrackPlayback();
+    return true;
+  }
+
+  stopSynthMusic() {
+    this.musicPlaying = false;
+    if (this.musicTimer) {
+      clearTimeout(this.musicTimer);
+      this.musicTimer = null;
+    }
+    this.stopPad();
+  }
+
   // --- Background music -------------------------------------------------
 
   setMusic(mode = "title") {
     this.musicMode = TRACKS[mode] ? mode : "title";
     if (!this.ctx || !this.musicGain) return;
     this.resume();
+
+    if (this.usesFileForMode(this.musicMode)) {
+      this.startFileTrack();
+      return;
+    }
+
+    this.pauseFileTrack();
     this.stopPad();
     this.step = 0;
     this.nextNoteTime = this.ctx.currentTime + 0.05;
@@ -242,12 +517,8 @@ export class AudioBus {
   }
 
   stopMusic() {
-    this.musicPlaying = false;
-    if (this.musicTimer) {
-      clearTimeout(this.musicTimer);
-      this.musicTimer = null;
-    }
-    this.stopPad();
+    this.stopSynthMusic();
+    this.pauseFileTrack();
   }
 
   startPad() {
@@ -290,7 +561,7 @@ export class AudioBus {
   }
 
   pumpMusic() {
-    if (!this.musicPlaying || !this.ctx) return;
+    if (!this.musicPlaying || !this.ctx || this.usingFileTrack) return;
     const track = TRACKS[this.musicMode];
     const secondsPerBeat = 60 / track.bpm;
     const stepDur = secondsPerBeat / 2; // 8th notes
@@ -302,14 +573,15 @@ export class AudioBus {
       const t = this.nextNoteTime + swing;
       const intensity = track.intensity;
 
-      if (track.bass[i]) this.musicNote(track.bass[i], t, stepDur * 0.9, "sawtooth", 0.07 * intensity, 180);
-      if (track.arp[i]) this.musicNote(track.arp[i], t, stepDur * 0.55, "triangle", 0.035 * intensity, 2400);
-      if (track.lead[i]) this.musicNote(track.lead[i], t, stepDur * 1.1, "square", 0.028 * intensity, 1800);
+      if (track.bass[i]) this.musicNote(track.bass[i], t, stepDur * 0.9, "sawtooth", 0.08 * intensity, 180);
+      if (track.arp[i]) this.musicNote(track.arp[i], t, stepDur * 0.55, "triangle", 0.04 * intensity, 2400);
+      if (track.lead[i]) this.musicNote(track.lead[i], t, stepDur * 1.1, "square", 0.032 * intensity, 1800);
 
       if (track.drums) {
-        if (i % 4 === 0) this.musicKick(t, 0.08 * intensity);
-        if (i % 4 === 2) this.musicHat(t, 0.035 * intensity);
-        if (i === 4 || i === 12) this.musicHat(t, 0.05 * intensity);
+        if (i % 4 === 0) this.musicKick(t, 0.1 * intensity);
+        if (i % 4 === 2) this.musicHat(t, 0.04 * intensity);
+        if (i === 4 || i === 12) this.musicHat(t, 0.055 * intensity);
+        if (i === 8) this.musicKick(t, 0.06 * intensity);
       }
 
       this.nextNoteTime += stepDur;

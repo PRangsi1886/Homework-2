@@ -52,6 +52,21 @@
           <button id="btn-start" class="btn primary">Launch Sortie</button>
           <button id="btn-how" class="btn ghost">Briefing</button>
         </div>
+        <div id="bgm-drop" class="bgm-drop" tabindex="0">
+          <div class="bgm-drop-row">
+            <label class="btn ghost bgm-btn" for="bgm-file">Load BGM</label>
+            <button id="btn-bgm-clear" class="btn ghost bgm-btn hidden" type="button">Clear</button>
+            <input
+              id="bgm-file"
+              type="file"
+              accept="audio/*,.mp3,.ogg,.wav,.m4a,.flac,.aac"
+              hidden
+            />
+          </div>
+          <p id="bgm-status" class="bgm-status">
+            Chat upload often fails for audio — drop your track here (or click Load BGM). It loops when the game starts.
+          </p>
+        </div>
         <p class="hint">Mouse / WASD to move · Hold click or Space to fire · 1–4 weapons · 0 self-destruct · M mute</p>
       </section>
 
