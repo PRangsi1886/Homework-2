@@ -6,6 +6,7 @@ export function createJuiceState() {
     hitstop: 0,
     flashAlpha: 0,
     flashColor: "#ffffff",
+    flashCooldown: 0,
     time: 0,
   };
 }
@@ -18,16 +19,20 @@ export function hitStop(juice, seconds = 0.06) {
   juice.hitstop = Math.max(juice.hitstop, seconds);
 }
 
-export function impactFlash(juice, color = "rgba(255,255,255,0.35)", alpha = 0.35) {
+/** Rare, short screen flashes — skipped while cooldown is active. */
+export function impactFlash(juice, color = "rgba(255,255,255,0.2)", alpha = 0.18, cooldown = 0.45) {
+  if (juice.flashCooldown > 0) return;
   juice.flashColor = color;
-  juice.flashAlpha = alpha;
+  juice.flashAlpha = Math.min(0.22, alpha);
+  juice.flashCooldown = cooldown;
 }
 
 export function decayJuice(juice, dt) {
   juice.time += dt;
   juice.trauma = Math.max(0, juice.trauma - dt * 1.6);
   if (juice.hitstop > 0) juice.hitstop = Math.max(0, juice.hitstop - dt);
-  if (juice.flashAlpha > 0) juice.flashAlpha = Math.max(0, juice.flashAlpha - dt * 4.5);
+  if (juice.flashCooldown > 0) juice.flashCooldown = Math.max(0, juice.flashCooldown - dt);
+  if (juice.flashAlpha > 0) juice.flashAlpha = Math.max(0, juice.flashAlpha - dt * 6);
 }
 
 export function shakeOffset(juice) {
@@ -45,6 +50,8 @@ export function lerpSquash(entity, dt, rate = 10) {
 }
 
 export function setSquash(entity, sx, sy) {
+  // Bosses are large pre-rendered sprites — squash reads as warping
+  if (entity?.type === "boss") return;
   entity.sx = sx;
   entity.sy = sy;
 }
@@ -201,16 +208,8 @@ export function drawPostFx(ctx, w, h, juice) {
   ctx.fillRect(0, 0, w, h);
   ctx.globalCompositeOperation = "source-over";
 
-  // subtle bloom veil from trauma
-  if (juice.trauma > 0.05) {
-    ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = `rgba(255, 180, 120, ${0.04 + juice.trauma * 0.08})`;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  // impact screen flash
-  if (juice.flashAlpha > 0) {
+  // impact screen flash (rare / brief)
+  if (juice.flashAlpha > 0.01) {
     ctx.globalAlpha = juice.flashAlpha;
     ctx.fillStyle = juice.flashColor;
     ctx.fillRect(0, 0, w, h);

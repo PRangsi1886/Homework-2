@@ -363,9 +363,9 @@ export class Game {
     this.burst(p.x, p.y, "#3ef0d0", 40, 280);
     this.audio.explosion(true);
     this.shake = 14;
-    addTrauma(this.juice, 0.5);
-    hitStop(this.juice, 0.08);
-    impactFlash(this.juice, "rgba(120,255,230,0.35)", 0.35);
+    addTrauma(this.juice, 0.4);
+    hitStop(this.juice, 0.07);
+    impactFlash(this.juice, "rgba(120,255,230,0.16)", 0.16, 0.7);
     spawnSparks(this.particles, p.x, p.y, 24);
     spawnSmoke(this.particles, p.x, p.y, 14);
 
@@ -491,7 +491,14 @@ export class Game {
       lerpSquash(this.player, dt, 12);
       if (this.player.hitFlash > 0) this.player.hitFlash -= dt;
     }
-    for (const e of this.enemies) lerpSquash(e, dt, 10);
+    for (const e of this.enemies) {
+      if (e.type === "boss") {
+        e.sx = 1;
+        e.sy = 1;
+      } else {
+        lerpSquash(e, dt, 10);
+      }
+    }
 
     if (this.levelPhase === "waves") this.updateWaves(dt);
     else if (this.levelPhase === "boss") this.updateBossPhase(dt);
@@ -855,15 +862,21 @@ export class Game {
         return;
       }
 
+      // Lerp toward patrol path so charge recovery doesn't teleport/warp
+      let targetX;
+      let targetY;
       if (e.final) {
         const amp = e.bossPhase === 3 ? 0.4 : 0.34;
         const speed = e.bossPhase === 3 ? 1.45 : 1.15;
-        e.x = W / 2 + Math.sin(e.phase * speed) * (W * amp);
-        e.y = holdY + Math.sin(e.phase * 2.1) * (e.bossPhase === 3 ? 40 : 28);
+        targetX = W / 2 + Math.sin(e.phase * speed) * (W * amp);
+        targetY = holdY + Math.sin(e.phase * 2.1) * (e.bossPhase === 3 ? 40 : 28);
       } else {
-        e.x = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
-        e.y = holdY + Math.sin(e.phase * 1.7) * 18;
+        targetX = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
+        targetY = holdY + Math.sin(e.phase * 1.7) * 18;
       }
+      const follow = Math.min(1, 3.2 * dt);
+      e.x += (targetX - e.x) * follow;
+      e.y += (targetY - e.y) * follow;
       return;
     }
 
@@ -968,14 +981,15 @@ export class Game {
     for (const p of this.powerups) {
       p.y += p.vy * dt;
       if (p.y - p.h / 2 > H) {
-        if (p.type === "super") {
-          this.lives += 1;
-          this.flashMessage("EXTRA FIGHTER SECURED", 1.3);
-          this.audio.powerup();
-        } else if (p.passScore) {
-          this.score += p.passScore;
-          this.flashMessage(`+${p.passScore} LET PASS`, 0.9);
-        }
+          if (p.type === "super") {
+            this.lives += 1;
+            this.flashMessage("EXTRA FIGHTER SECURED", 1.3);
+            this.audio.pickup("super");
+          } else if (p.passScore) {
+            this.score += p.passScore;
+            this.flashMessage(`+${p.passScore} LET PASS`, 0.9);
+            this.audio.pickup("generic");
+          }
         continue;
       }
       kept.push(p);
@@ -994,16 +1008,17 @@ export class Game {
         if (e.hp <= 0) continue;
         if (!aabb(b, e)) continue;
         e.hp -= b.damage;
-        e.flash = b.weapon === "rocket" ? 0.12 : 0.07;
+        e.flash = b.weapon === "rocket" ? 0.1 : 0.05;
         setSquash(e, 1.25, 0.75);
         spawnSparks(this.particles, b.x, b.y, b.weapon === "rocket" ? 16 : 7);
         if (b.weapon === "rocket") {
           spawnSmoke(this.particles, b.x, b.y, 10);
-          addTrauma(this.juice, 0.35);
-          hitStop(this.juice, 0.07);
-          impactFlash(this.juice, "rgba(255,180,80,0.28)", 0.28);
+          addTrauma(this.juice, 0.3);
+          hitStop(this.juice, 0.06);
+          impactFlash(this.juice, "rgba(255,180,80,0.16)", 0.16, 0.55);
         } else {
-          addTrauma(this.juice, 0.06);
+          addTrauma(this.juice, 0.04);
+          this.audio.hit();
         }
         this.burst(b.x, b.y, b.color, b.weapon === "rocket" ? 18 : 5, b.weapon === "rocket" ? 220 : 100);
         if (b.splash) this.applySplash(b, e);
@@ -1035,8 +1050,8 @@ export class Game {
         setSquash(e, 1.3, 0.7);
         setSquash(p, 1.2, 0.8);
         spawnSparks(this.particles, (p.x + e.x) / 2, (p.y + e.y) / 2, 14);
-        addTrauma(this.juice, 0.22);
-        hitStop(this.juice, 0.05);
+        addTrauma(this.juice, 0.18);
+        hitStop(this.juice, 0.04);
         this.burst((p.x + e.x) / 2, (p.y + e.y) / 2, "#fff2cc", 12, 160);
         if (e.hp <= 0) this.killEnemy(e);
       }
@@ -1079,12 +1094,12 @@ export class Game {
     this.burst(e.x, e.y, e.color, big ? 50 : 16, big ? 320 : 180);
     spawnSparks(this.particles, e.x, e.y, big ? 28 : 12);
     spawnSmoke(this.particles, e.x, e.y, big ? 18 : 8);
-    addTrauma(this.juice, big ? 0.55 : 0.18);
+    addTrauma(this.juice, big ? 0.45 : 0.12);
     if (big) {
-      hitStop(this.juice, 0.1);
-      impactFlash(this.juice, "rgba(255,220,160,0.4)", 0.4);
+      hitStop(this.juice, 0.09);
+      impactFlash(this.juice, "rgba(255,220,160,0.18)", 0.18, 0.8);
     } else {
-      hitStop(this.juice, 0.035);
+      hitStop(this.juice, 0.03);
     }
     this.audio.explosion(big);
     if (!fromSuicide) {
@@ -1143,7 +1158,10 @@ export class Game {
   }
 
   collectPowerup(up) {
-    this.audio.powerup();
+    this.audio.unlock();
+    this.audio.pickup(up.type || "generic");
+    spawnSparks(this.particles, up.x, up.y, 8);
+    setSquash(this.player, 0.9, 1.12);
     if (up.type === "ammo") {
       this.player.ammo.ion += up.ammo.ion || 0;
       this.player.ammo.plasma += up.ammo.plasma || 0;
@@ -1178,12 +1196,13 @@ export class Game {
     }
     if (dmg > 0) p.hull -= dmg;
     p.invuln = 0.55;
-    p.hitFlash = 0.1;
+    p.hitFlash = 0.08;
     setSquash(p, 1.28, 0.72);
-    this.shake = 10;
-    addTrauma(this.juice, 0.28);
-    hitStop(this.juice, 0.055);
-    impactFlash(this.juice, "rgba(255,70,90,0.3)", 0.3);
+    this.shake = 8;
+    addTrauma(this.juice, 0.22);
+    hitStop(this.juice, 0.045);
+    impactFlash(this.juice, "rgba(255,70,90,0.14)", 0.14, 0.5);
+    this.audio.hurt();
     spawnSparks(this.particles, p.x, p.y, 12);
     this.burst(p.x, p.y, "#ff5a6e", 10, 120);
     if (p.hull <= 0) this.loseLife(false);
@@ -1412,10 +1431,11 @@ export class Game {
       }
       const flashing = e.flash > 0;
       drawSprite(ctx, img, e.x, e.y, w, h, {
-        flash: flashing && e.flash > 0.04,
-        flashRed: flashing && e.flash <= 0.04,
-        sx: e.sx ?? 1,
-        sy: e.sy ?? 1,
+        flash: flashing && e.flash > 0.03,
+        flashRed: flashing && e.flash <= 0.03,
+        // Keep bosses at uniform scale to avoid warping
+        sx: e.type === "boss" ? 1 : e.sx ?? 1,
+        sy: e.type === "boss" ? 1 : e.sy ?? 1,
       });
       if (e.hp < e.maxHp && e.type !== "boss") {
         ctx.fillStyle = "rgba(0,0,0,0.5)";
