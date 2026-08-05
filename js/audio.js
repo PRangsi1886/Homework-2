@@ -178,7 +178,14 @@ export class AudioBus {
     this.wireTrackElement();
     this.applyGain();
     this.resume();
-    if (!this.musicPlaying) this.setMusic(this.musicMode || "title");
+    // Ensure bundled/custom BGM is ready before starting music.
+    Promise.resolve(this.readyPromise).finally(() => {
+      if (!this.musicPlaying && !this.usingFileTrack) {
+        this.setMusic(this.musicMode || "title");
+      } else {
+        this.syncFileTrackPlayback();
+      }
+    });
   }
 
   applyGain() {
