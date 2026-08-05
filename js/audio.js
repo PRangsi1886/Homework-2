@@ -121,7 +121,14 @@ export class AudioBus {
     try {
       await this.restoreCustomTrack();
     } catch {
-      /* ignore — fall back to procedural synth */
+      /* ignore — fall back to bundled / procedural */
+    }
+    if (!this.trackUrl) {
+      try {
+        await this.tryLoadBundledBgm();
+      } catch {
+        /* ignore — procedural synth remains */
+      }
     }
   }
 

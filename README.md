@@ -29,7 +29,7 @@ Then visit `http://localhost:8080`.
 | `M` | Mute / unmute |
 | Volume slider (bottom-left) | Adjust master volume (SFX + BGM) |
 
-Procedural synthwave BGM shifts with title, combat, boss fights, and victory. Optional file BGM: place `assets/bgm.mp3` (or `.ogg` / `.wav` / `.m4a`) in the repo.
+Procedural file BGM loads from `assets/bgm.mp3` when present (falls back to synth). An intro video plays from `assets/cutscenes/intro.mp4` after Launch Sortie.
 
 **Pickup sprites:** Animated strips live in `assets/pickups/` (`shield`, `repair`, `super`, `rocket`, `ammo`, plus optional `*_alt` variants). Horizontal sheets; frame size = sheet height. Replace those PNGs with your own to swap art.
 
