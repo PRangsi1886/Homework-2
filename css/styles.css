@@ -216,21 +216,7 @@ body::before {
   padding-top: 28%;
 }
 
-.overlay.cutscene {
-  background: transparent;
-  backdrop-filter: none;
-  justify-content: flex-end;
-  align-items: flex-end;
-  padding: 18px;
-  pointer-events: none;
-}
 
-.overlay.cutscene .skip-btn {
-  pointer-events: auto;
-  font-size: 11px;
-  padding: 10px 14px;
-  letter-spacing: 0.14em;
-}
 
 .overlay-glow {
   position: absolute;

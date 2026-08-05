@@ -2,7 +2,7 @@
 
 Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu) mechanics and [Ikaruga](https://en.wikipedia.org/wiki/Ikaruga)'s high-contrast geometric art style.
 
-You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. An animated cutscene plays after Launch Sortie, and another after the final victory.
+You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander.
 
 ## Play
 
@@ -29,7 +29,7 @@ Then visit `http://localhost:8080`.
 | `M` | Mute / unmute |
 | Volume slider (bottom-left) | Adjust master volume (SFX + BGM) |
 
-Procedural synthwave BGM shifts with title, cutscenes, combat, boss fights, and victory. Optional file BGM: place `assets/bgm.mp3` (or `.ogg` / `.wav` / `.m4a`) in the repo.
+Procedural synthwave BGM shifts with title, combat, boss fights, and victory. Optional file BGM: place `assets/bgm.mp3` (or `.ogg` / `.wav` / `.m4a`) in the repo.
 
 **Pickup sprites:** Animated strips live in `assets/pickups/` (`shield`, `repair`, `super`, `rocket`, `ammo`, plus optional `*_alt` variants). Horizontal sheets; frame size = sheet height. Replace those PNGs with your own to swap art.
 

@@ -1,5 +1,4 @@
 import { AudioBus } from "./audio.js";
-import { createIntroCutscene, createVictoryCutscene } from "./cutscenes.js";
 import {
   W,
   H,
@@ -38,7 +37,6 @@ import {
 
 const STATES = {
   TITLE: "title",
-  CUTSCENE: "cutscene",
   PLAYING: "playing",
   PAUSED: "paused",
   LEVEL_CLEAR: "levelclear",
@@ -63,7 +61,6 @@ export class Game {
     this.juice = createJuiceState();
     this.selfDestructArmed = 0;
     this.message = null;
-    this.cutscene = null;
     this.sprites = getSprites();
     this.pickupAtlas = null;
     this.enemyAtlas = null;
@@ -90,7 +87,6 @@ export class Game {
       hud: document.getElementById("hud"),
       title: document.getElementById("title-screen"),
       briefing: document.getElementById("briefing-screen"),
-      cutscene: document.getElementById("cutscene-screen"),
       pause: document.getElementById("pause-screen"),
       gameover: document.getElementById("gameover-screen"),
       victory: document.getElementById("victory-screen"),
@@ -115,7 +111,6 @@ export class Game {
     document.getElementById("btn-restart").addEventListener("click", () => this.startGame());
     document.getElementById("btn-victory-restart").addEventListener("click", () => this.startGame());
     document.getElementById("btn-resume").addEventListener("click", () => this.resume());
-    document.getElementById("btn-skip-cutscene").addEventListener("click", () => this.skipCutscene());
     document.getElementById("btn-how").addEventListener("click", () => {
       this.ui.title.classList.add("hidden");
       this.ui.briefing.classList.remove("hidden");
@@ -177,11 +172,6 @@ export class Game {
         e.preventDefault();
       }
       this.keys.add(e.code);
-      if (this.state === STATES.CUTSCENE && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) {
-        e.preventDefault();
-        this.skipCutscene();
-        return;
-      }
       if (e.code === "Digit1") this.setWeapon("gun");
       if (e.code === "Digit2") this.setWeapon("ion");
       if (e.code === "Digit3") this.setWeapon("plasma");
@@ -214,10 +204,6 @@ export class Game {
     });
     this.canvas.addEventListener("pointerdown", (e) => {
       this.audio.unlock();
-      if (this.state === STATES.CUTSCENE) {
-        this.skipCutscene();
-        return;
-      }
       if (e.button === 0) this.mouse.down = true;
       if (e.button === 2) {
         e.preventDefault();
@@ -269,7 +255,6 @@ export class Game {
 
   currentMusicMode() {
     if (this.state === STATES.VICTORY) return "victory";
-    if (this.state === STATES.CUTSCENE) return "cutscene";
     if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.PAUSED) {
       if (this.levelPhase === "boss" || this.levelPhase === "victory") return "boss";
       return "combat";
@@ -285,29 +270,10 @@ export class Game {
     this.audio.unlock();
     this.audio.launch();
     this.resetRun();
-    this.beginIntroCutscene();
-  }
-
-  beginIntroCutscene() {
-    // Hook: before Stage 1 — Agent Zlisto dossier image cutscene.
-    this.cutscene = createIntroCutscene(() => this.beginGameplay());
-    this.cutsceneStartedAt = performance.now();
-    this.state = STATES.CUTSCENE;
-    this.showScreen("cutscene");
-    this.syncMusic();
-  }
-
-  beginVictoryCutscene() {
-    // Hook: after final boss — Victory cutscene (cutscenes.js / stick-figure timeline).
-    this.cutscene = createVictoryCutscene(this.score, () => this.showVictory());
-    this.cutsceneStartedAt = performance.now();
-    this.state = STATES.CUTSCENE;
-    this.showScreen("cutscene");
-    this.audio.setMusic("victory");
+    this.beginGameplay();
   }
 
   beginGameplay() {
-    this.cutscene = null;
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
@@ -317,25 +283,16 @@ export class Game {
   }
 
   showVictory() {
-    this.cutscene = null;
     this.state = STATES.VICTORY;
     this.ui.victoryScore.textContent = String(this.score);
     this.showScreen("victory");
     this.audio.setMusic("victory");
   }
 
-  skipCutscene() {
-    if (this.state !== STATES.CUTSCENE || !this.cutscene) return;
-    // Ignore the same click that pressed Launch Sortie
-    if (performance.now() - (this.cutsceneStartedAt || 0) < 450) return;
-    this.cutscene.skip();
-  }
-
   showScreen(mode) {
-    const { hud, title, briefing, cutscene, pause, gameover, victory, levelclear } = this.ui;
+    const { hud, title, briefing, pause, gameover, victory, levelclear } = this.ui;
     title.classList.add("hidden");
     briefing.classList.add("hidden");
-    cutscene.classList.add("hidden");
     pause.classList.add("hidden");
     gameover.classList.add("hidden");
     victory.classList.add("hidden");
@@ -344,7 +301,6 @@ export class Game {
 
     if (mode === "playing") hud.classList.remove("hidden");
     if (mode === "title") title.classList.remove("hidden");
-    if (mode === "cutscene") cutscene.classList.remove("hidden");
     if (mode === "pause") {
       hud.classList.remove("hidden");
       pause.classList.remove("hidden");
@@ -506,10 +462,6 @@ export class Game {
         this.update(this.step);
         this.accum -= this.step;
       }
-    } else if (this.state === STATES.CUTSCENE && this.cutscene) {
-      this.accum = 0;
-      this.cutscene.update(dt);
-      decayJuice(this.juice, dt);
     } else {
       this.accum = 0;
       this.updateDecor(dt);
@@ -556,7 +508,7 @@ export class Game {
     else if (this.levelPhase === "clear" || this.levelPhase === "victory") {
       this.clearTimer -= dt;
       if (this.clearTimer <= 0) {
-        if (this.levelPhase === "victory") this.beginVictoryCutscene();
+        if (this.levelPhase === "victory") this.showVictory();
         else this.nextLevel();
       }
     }
@@ -603,7 +555,7 @@ export class Game {
 
   nextLevel() {
     if (this.level >= MAX_LEVEL) {
-      this.beginVictoryCutscene();
+      this.showVictory();
       return;
     }
     this.level += 1;
@@ -1354,11 +1306,6 @@ export class Game {
 
   draw() {
     const ctx = this.ctx;
-    if (this.state === STATES.CUTSCENE && this.cutscene) {
-      this.cutscene.draw(ctx);
-      drawPostFx(ctx, W, H, this.juice);
-      return;
-    }
 
     const traumaShake = shakeOffset(this.juice);
     const sx = traumaShake.x + (this.shake ? (Math.random() - 0.5) * this.shake : 0);
