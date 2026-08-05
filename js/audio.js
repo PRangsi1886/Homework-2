@@ -4,6 +4,8 @@ const BGM_DB = "ferrum-wing-bgm";
 const BGM_STORE = "tracks";
 const BGM_KEY = "custom";
 const BASE_GAIN = 0.6875; // was 0.55 — ~25% louder master bus
+const MUSIC_BASE_GAIN = 0.55;
+const SFX_BASE_GAIN = 2.4; // weapon / combat SFX bus — kept well above BGM
 const BUNDLED_BGM = [
   "assets/bgm.mp3",
   "assets/bgm.ogg",
@@ -102,6 +104,7 @@ export class AudioBus {
     this.musicGain = null;
     this.volume = this.loadVolume();
     this.muted = this.loadMuted();
+    this.musicDuck = 1;
     this.musicMode = "title";
     this.musicPlaying = false;
     this.musicTimer = null;
@@ -170,13 +173,14 @@ export class AudioBus {
     this.master = this.ctx.createGain();
     this.sfxGain = this.ctx.createGain();
     this.musicGain = this.ctx.createGain();
-    this.sfxGain.gain.value = 1;
-    this.musicGain.gain.value = 0.55;
+    this.sfxGain.gain.value = SFX_BASE_GAIN;
+    this.musicGain.gain.value = MUSIC_BASE_GAIN;
     this.sfxGain.connect(this.master);
     this.musicGain.connect(this.master);
     this.master.connect(this.ctx.destination);
     this.wireTrackElement();
     this.applyGain();
+    this.applyMusicBus();
     this.resume();
     // Ensure bundled/custom BGM is ready before starting music.
     Promise.resolve(this.readyPromise).finally(() => {
@@ -195,6 +199,24 @@ export class AudioBus {
     this.master.gain.cancelScheduledValues(t);
     this.master.gain.setTargetAtTime(value, t, 0.02);
     this.syncFileTrackPlayback();
+  }
+
+  applyMusicBus() {
+    if (!this.musicGain) return;
+    const t = this.ctx?.currentTime ?? 0;
+    const value = MUSIC_BASE_GAIN * this.musicDuck;
+    this.musicGain.gain.cancelScheduledValues(t);
+    this.musicGain.gain.setTargetAtTime(value, t, 0.08);
+  }
+
+  /** Multiply BGM bus (1 = full, 0.7 = 30% quieter). */
+  setMusicDuck(factor = 1) {
+    this.musicDuck = Math.max(0, Math.min(1, Number(factor) || 0));
+    this.applyMusicBus();
+  }
+
+  clearMusicDuck() {
+    this.setMusicDuck(1);
   }
 
   setVolume(v) {
@@ -666,44 +688,44 @@ export class AudioBus {
   shoot(weapon) {
     if (weapon === "rocket") {
       // Thruster whoosh + bass launch thump + descending growl
-      this.noise(0.12, 0.14, 320);
-      this.noise(0.18, 0.08, 900, 0.04);
-      this.tone(110, 0.12, "sine", 0.16, -50);
-      this.tone(220, 0.22, "sawtooth", 0.12, -140);
-      this.tone(70, 0.28, "triangle", 0.07, -15, 0.03);
+      this.noise(0.14, 0.28, 320);
+      this.noise(0.2, 0.16, 900, 0.04);
+      this.tone(110, 0.14, "sine", 0.32, -50);
+      this.tone(220, 0.24, "sawtooth", 0.26, -140);
+      this.tone(70, 0.3, "triangle", 0.16, -15, 0.03);
     } else if (weapon === "plasma") {
       // Heavy energy pulse: low thump, mid blast, bright harmonic
-      this.tone(140, 0.14, "sine", 0.14, -40);
-      this.tone(280, 0.12, "sawtooth", 0.12, -120);
-      this.tone(560, 0.09, "square", 0.06, 180);
-      this.tone(840, 0.07, "triangle", 0.04, 220, 0.03);
-      this.noise(0.07, 0.07, 1100);
+      this.tone(140, 0.16, "sine", 0.3, -40);
+      this.tone(280, 0.14, "sawtooth", 0.26, -120);
+      this.tone(560, 0.1, "square", 0.14, 180);
+      this.tone(840, 0.08, "triangle", 0.1, 220, 0.03);
+      this.noise(0.08, 0.16, 1100);
     } else if (weapon === "ion") {
       // Electric arc: rising zap + sparkle crackle
-      this.tone(640, 0.08, "sawtooth", 0.08, 420);
-      this.tone(980, 0.06, "triangle", 0.09, 320);
-      this.tone(1480, 0.05, "sine", 0.06, 260);
-      this.tone(2100, 0.04, "sine", 0.035, 0, 0.02);
-      this.noise(0.04, 0.05, 2800);
+      this.tone(640, 0.09, "sawtooth", 0.2, 420);
+      this.tone(980, 0.07, "triangle", 0.22, 320);
+      this.tone(1480, 0.06, "sine", 0.14, 260);
+      this.tone(2100, 0.05, "sine", 0.09, 0, 0.02);
+      this.noise(0.05, 0.12, 2800);
     } else {
       // Kinetic gun: sharp metallic crack + body thump
-      this.tone(980, 0.035, "square", 0.07, -280);
-      this.tone(420, 0.055, "triangle", 0.06, -100);
-      this.tone(180, 0.05, "sine", 0.05, -40);
-      this.noise(0.035, 0.055, 2200);
+      this.tone(980, 0.045, "square", 0.18, -280);
+      this.tone(420, 0.065, "triangle", 0.14, -100);
+      this.tone(180, 0.06, "sine", 0.12, -40);
+      this.noise(0.04, 0.14, 2200);
     }
   }
 
   superLaser() {
     // Charge snap → sustained beam roar → high scream
-    this.tone(180, 0.12, "sawtooth", 0.14, 220);
-    this.tone(90, 0.45, "sawtooth", 0.18, -20);
-    this.tone(360, 0.35, "square", 0.08, 80, 0.04);
-    this.tone(1200, 0.28, "sine", 0.07, 400, 0.06);
-    this.tone(2400, 0.22, "triangle", 0.045, 200, 0.08);
-    this.noise(0.35, 0.16, 500);
-    this.noise(0.2, 0.1, 1600, 0.05);
-    this.noise(0.15, 0.07, 3200, 0.1);
+    this.tone(180, 0.14, "sawtooth", 0.3, 220);
+    this.tone(90, 0.5, "sawtooth", 0.36, -20);
+    this.tone(360, 0.38, "square", 0.18, 80, 0.04);
+    this.tone(1200, 0.3, "sine", 0.16, 400, 0.06);
+    this.tone(2400, 0.24, "triangle", 0.1, 200, 0.08);
+    this.noise(0.4, 0.32, 500);
+    this.noise(0.22, 0.2, 1600, 0.05);
+    this.noise(0.16, 0.14, 3200, 0.1);
   }
 
   hit() {

@@ -280,7 +280,7 @@ export class Game {
 
   currentMusicMode() {
     if (this.state === STATES.VICTORY) return "victory";
-    if (this.state === STATES.CUTSCENE) return "title";
+    if (this.state === STATES.CUTSCENE) return "cutscene";
     if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.PAUSED) {
       if (this.levelPhase === "boss" || this.levelPhase === "victory") return "boss";
       return "combat";
@@ -300,8 +300,9 @@ export class Game {
   }
 
   beginIntroCutscene() {
-    // Pause looping BGM while the intro video (with its own audio) plays.
-    this.audio.stopMusic();
+    // Keep BGM under the intro video, ducked 30% so dialogue/SFX can cut through.
+    this.audio.setMusic("cutscene");
+    this.audio.setMusicDuck(0.7);
     this.cutscene = createIntroCutscene(() => this.beginGameplay());
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;
@@ -310,6 +311,7 @@ export class Game {
 
   beginGameplay() {
     this.cutscene = null;
+    this.audio.clearMusicDuck();
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
