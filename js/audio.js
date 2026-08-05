@@ -209,7 +209,7 @@ export class AudioBus {
     this.musicGain.gain.setTargetAtTime(value, t, 0.08);
   }
 
-  /** Multiply BGM bus (1 = full, 0.7 = 30% quieter). */
+  /** Multiply BGM bus (1 = full, 0.35 = 35% of normal level). */
   setMusicDuck(factor = 1) {
     this.musicDuck = Math.max(0, Math.min(1, Number(factor) || 0));
     this.applyMusicBus();
