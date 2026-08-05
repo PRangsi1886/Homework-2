@@ -3,7 +3,19 @@
  */
 import { W, H } from "./entities.js";
 
-const INTRO_VIDEO_SRC = "assets/cutscenes/intro.mp4";
+const INTRO_VIDEO_LOCAL = "assets/cutscenes/intro.mp4";
+/** jsDelivr serves correct video/mp4 + CORS; githack redirects MP4 as text/html and breaks playback. */
+const INTRO_VIDEO_CDN =
+  "https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@cursor/capital-syndicate-0ccd/assets/cutscenes/intro.mp4";
+
+function introVideoSources() {
+  const host = typeof location !== "undefined" ? location.hostname : "";
+  // Prefer CDN on githack / similar proxies that mishandle large binary assets.
+  if (/githack\.com$/i.test(host) || /statically\.io$/i.test(host)) {
+    return [INTRO_VIDEO_CDN, INTRO_VIDEO_LOCAL];
+  }
+  return [INTRO_VIDEO_LOCAL, INTRO_VIDEO_CDN];
+}
 
 /**
  * Full-bleed HTMLVideoElement cutscene drawn to the game canvas.
@@ -11,7 +23,7 @@ const INTRO_VIDEO_SRC = "assets/cutscenes/intro.mp4";
  */
 export class VideoCutscene {
   constructor({
-    src = INTRO_VIDEO_SRC,
+    src,
     onDone,
     width = W,
     height = H,
@@ -27,26 +39,60 @@ export class VideoCutscene {
     this.started = false;
     this.failed = false;
     this.ended = false;
+    this._hasData = false;
+
+    this.sources = Array.isArray(src) ? src.filter(Boolean) : [src || INTRO_VIDEO_LOCAL];
+    this.sourceIndex = 0;
 
     this.video = document.createElement("video");
-    this.video.src = src;
     this.video.playsInline = true;
     this.video.preload = "auto";
-    this.video.crossOrigin = "anonymous";
-    // Keep game master volume separate — cutscene audio from the file itself.
-    // Mute only if the page blocks autoplay with sound (we retry muted).
-    this.video.muted = muted;
     this.video.loop = false;
     this.video.playbackRate = 1.1; // 10% faster
+    this.video.muted = muted;
 
+    this.video.addEventListener("loadeddata", () => {
+      this._hasData = true;
+    });
+    this.video.addEventListener("canplay", () => {
+      this._hasData = true;
+    });
     this.video.addEventListener("ended", () => {
       this.ended = true;
       this.fadeOutAndFinish();
     });
-    this.video.addEventListener("error", () => {
-      this.failed = true;
-      this.skip();
-    });
+    this.video.addEventListener("error", () => this.onVideoError());
+
+    this.applySource(this.sources[0]);
+  }
+
+  applySource(url) {
+    this._hasData = false;
+    try {
+      const abs = new URL(url, typeof location !== "undefined" ? location.href : undefined);
+      if (abs.origin !== location.origin) this.video.crossOrigin = "anonymous";
+      else this.video.removeAttribute("crossorigin");
+    } catch {
+      this.video.removeAttribute("crossorigin");
+    }
+    this.video.src = url;
+    try {
+      this.video.load();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  onVideoError() {
+    if (this.done || this.failed) return;
+    if (this.sourceIndex + 1 < this.sources.length) {
+      this.sourceIndex += 1;
+      this.started = false;
+      this.applySource(this.sources[this.sourceIndex]);
+      return;
+    }
+    this.failed = true;
+    this.skip();
   }
 
   fadeOutAndFinish() {
@@ -76,8 +122,8 @@ export class VideoCutscene {
         this.video.muted = true;
         await this.video.play();
       } catch {
-        this.failed = true;
-        this.skip();
+        // Don't hard-fail yet — metadata may still be loading; timeout handles it.
+        this.started = false;
       }
     }
   }
@@ -97,8 +143,15 @@ export class VideoCutscene {
     if (this.time < 0.45) this.fade = 1 - this.time / 0.45;
     else this.fade = Math.max(0, this.fade - dt * 2);
 
-    // Safety timeout if metadata never loads
-    if (this.time > 2.5 && this.video.readyState < 2) {
+    // Give CDNs time to buffer; only skip if nothing decoded yet.
+    if (this.time > 8 && !this._hasData && this.video.readyState < 2) {
+      if (this.sourceIndex + 1 < this.sources.length) {
+        this.sourceIndex += 1;
+        this.started = false;
+        this.time = 0;
+        this.applySource(this.sources[this.sourceIndex]);
+        return;
+      }
       this.failed = true;
       this.skip();
     }
@@ -120,7 +173,11 @@ export class VideoCutscene {
       const dh = vh * scale;
       const dx = (w - dw) / 2;
       const dy = (h - dh) / 2;
-      ctx.drawImage(this.video, dx, dy, dw, dh);
+      try {
+        ctx.drawImage(this.video, dx, dy, dw, dh);
+      } catch {
+        /* tainted / not ready — keep black frame */
+      }
     }
 
     // Letterbox bars
@@ -143,7 +200,7 @@ export class VideoCutscene {
 }
 
 export function createIntroCutscene(onDone) {
-  return new VideoCutscene({ src: INTRO_VIDEO_SRC, onDone });
+  return new VideoCutscene({ src: introVideoSources(), onDone });
 }
 
 export function createVictoryCutscene(_score, onDone) {

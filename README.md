@@ -10,7 +10,7 @@ You command robotic fighters escorting a freighter across **four sectors**. Clea
 
 https://raw.githack.com/PRangsi1886/Homework-2/cursor/capital-syndicate-0ccd/index.html
 
-Hard-refresh (`Ctrl+Shift+R` / `Cmd+Shift+R`) if a change doesn’t show yet — the branch CDN can take a minute to refresh. Do not use commit-pinned `rawcdn` links; those freeze an old build forever.
+Hard-refresh (`Ctrl+Shift+R` / `Cmd+Shift+R`) after updates. Intro video loads from jsDelivr when this CDN mishandles MP4 MIME types.
 
 Or open `index.html` locally:
 
