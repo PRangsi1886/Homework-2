@@ -37,6 +37,7 @@ export class VideoCutscene {
     // Mute only if the page blocks autoplay with sound (we retry muted).
     this.video.muted = muted;
     this.video.loop = false;
+    this.video.playbackRate = 1.1; // 10% faster
 
     this.video.addEventListener("ended", () => {
       this.ended = true;
