@@ -1,6 +1,6 @@
-# Ferrum Wing
+# Capital Syndicate Act 1: Operation Ferrum Wings
 
-Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu) mechanics and [Ikaruga](https://en.wikipedia.org/wiki/Ikaruga)'s high-contrast geometric art style.
+Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu) mechanics and [Ikaruga](https://en.wikipedia.org/ng/wiki/Ikaruga)'s high-contrast geometric art style.
 
 You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander. An animated cutscene plays after Launch Sortie, and another after the final victory.
 
@@ -13,6 +13,8 @@ python3 -m http.server 8080
 ```
 
 Then visit `http://localhost:8080`.
+
+**Shareable build (latest commit on this branch):** see the pull request description for the live CDN link.
 
 ## Controls
 
