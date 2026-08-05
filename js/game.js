@@ -30,6 +30,7 @@ import {
   spawnSparks,
   spawnSmoke,
   spawnMuzzle,
+  spawnExplosion,
   updateParticles,
   drawParticles,
   drawGlow,
@@ -397,14 +398,13 @@ export class Game {
       gun: 0,
     });
     this.powerups.push(ejected);
-    this.burst(p.x, p.y, "#3ef0d0", 40, 280);
+    this.burst(p.x, p.y, "#4de8ff", 48, 340);
     this.audio.explosion(true);
-    this.shake = 14;
-    addTrauma(this.juice, 0.4);
-    hitStop(this.juice, 0.07);
-    impactFlash(this.juice, "rgba(120,255,230,0.16)", 0.16, 0.7);
-    spawnSparks(this.particles, p.x, p.y, 24);
-    spawnSmoke(this.particles, p.x, p.y, 14);
+    this.shake = 18;
+    addTrauma(this.juice, 0.55);
+    hitStop(this.juice, 0.1);
+    impactFlash(this.juice, "rgba(255,79,216,0.22)", 0.22, 0.55);
+    spawnExplosion(this.particles, p.x, p.y, { big: true });
 
     let bossRef = null;
     let bossDestroyed = false;
@@ -1089,9 +1089,10 @@ export class Game {
         spawnSparks(this.particles, b.x, b.y, b.weapon === "rocket" ? 16 : 7);
         if (b.weapon === "rocket") {
           spawnSmoke(this.particles, b.x, b.y, 10);
-          addTrauma(this.juice, 0.3);
-          hitStop(this.juice, 0.06);
-          impactFlash(this.juice, "rgba(255,180,80,0.16)", 0.16, 0.55);
+          addTrauma(this.juice, 0.38);
+          hitStop(this.juice, 0.08);
+          impactFlash(this.juice, "rgba(255,79,216,0.2)", 0.2, 0.45);
+          spawnExplosion(this.particles, b.x, b.y, { big: false });
         } else {
           addTrauma(this.juice, 0.04);
           if (!b.pierce || Math.random() < 0.3) this.audio.hit();
@@ -1157,8 +1158,10 @@ export class Game {
         if (e.hp <= 0) this.killEnemy(e);
       }
     }
-    this.shake = Math.max(this.shake, 6);
-    spawnSparks(this.particles, b.x, b.y, 10);
+    this.shake = Math.max(this.shake, 10);
+    spawnExplosion(this.particles, b.x, b.y, { big: false });
+    addTrauma(this.juice, 0.2);
+    impactFlash(this.juice, "rgba(255,122,61,0.16)", 0.16, 0.4);
     this.audio.explosion(false);
   }
 
@@ -1167,15 +1170,16 @@ export class Game {
     e._dead = true;
     e.hp = 0;
     const big = e.type === "boss";
-    this.burst(e.x, e.y, e.color, big ? 50 : 16, big ? 320 : 180);
-    spawnSparks(this.particles, e.x, e.y, big ? 28 : 12);
-    spawnSmoke(this.particles, e.x, e.y, big ? 18 : 8);
-    addTrauma(this.juice, big ? 0.45 : 0.12);
+    spawnExplosion(this.particles, e.x, e.y, { big });
+    this.burst(e.x, e.y, big ? "#ff4fd8" : "#4de8ff", big ? 36 : 14, big ? 380 : 220);
+    addTrauma(this.juice, big ? 0.72 : 0.22);
+    this.shake = Math.max(this.shake, big ? 18 : 7);
     if (big) {
-      hitStop(this.juice, 0.09);
-      impactFlash(this.juice, "rgba(255,220,160,0.18)", 0.18, 0.8);
+      hitStop(this.juice, 0.14);
+      impactFlash(this.juice, "rgba(255,90,200,0.28)", 0.28, 0.55);
     } else {
-      hitStop(this.juice, 0.03);
+      hitStop(this.juice, 0.045);
+      impactFlash(this.juice, "rgba(77,232,255,0.14)", 0.14, 0.35);
     }
     this.audio.explosion(big);
     if (!fromSuicide) {
@@ -1342,11 +1346,11 @@ export class Game {
     spawnBurst(this.particles, x, y, {
       count,
       speed,
-      color,
-      life: 0.45,
-      size: 2.4,
-      gravity: 30,
-      drag: 0.5,
+      colors: [color, "#ffffff", "#ff4fd8", "#4de8ff", "#ffe66d"],
+      life: 0.55,
+      size: 3.2,
+      gravity: 25,
+      drag: 0.45,
       glow: true,
     });
   }
