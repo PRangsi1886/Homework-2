@@ -101,6 +101,7 @@ export class Game {
       lives: document.getElementById("hud-lives"),
       shield: document.getElementById("bar-shield"),
       hull: document.getElementById("bar-hull"),
+      laser: document.getElementById("bar-laser"),
       ammoGun: document.getElementById("ammo-gun"),
       ammoIon: document.getElementById("ammo-ion"),
       ammoPlasma: document.getElementById("ammo-plasma"),
@@ -182,6 +183,11 @@ export class Game {
       if (this.state === STATES.CUTSCENE && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) {
         e.preventDefault();
         this.skipCutscene();
+        return;
+      }
+      if (e.code === "Space" && this.state === STATES.PLAYING && this.laserCharge >= 100) {
+        e.preventDefault();
+        this.fireSuperLaser();
         return;
       }
       if (e.code === "Digit1") this.setWeapon("gun");
@@ -267,6 +273,9 @@ export class Game {
     this.levelPhase = "waves";
     this.clearTimer = 0;
     this.combo = 0;
+    this.laserCharge = 0;
+    this.superLaser = null;
+    this.killShakeScale = 1;
   }
 
   currentMusicMode() {
@@ -528,6 +537,9 @@ export class Game {
   update(dt) {
     this.updateDecor(dt);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
+    if (this.killShakeScale < 1) {
+      this.killShakeScale = Math.min(1, this.killShakeScale + dt * 1.35);
+    }
     if (this.player) {
       lerpSquash(this.player, dt, 12);
       if (this.player.hitFlash > 0) this.player.hitFlash -= dt;
@@ -667,8 +679,12 @@ export class Game {
       });
     }
 
-    const firing = this.mouse.down || this.keys.has("Space");
+    // Hold click to fire. Space is reserved for super laser when charged;
+    // otherwise Space still fires the current weapon.
+    const spaceFire = this.keys.has("Space") && this.laserCharge < 100;
+    const firing = this.mouse.down || spaceFire;
     if (firing) this.tryFire(dt);
+    this.updateSuperLaser(dt);
   }
 
   tryFire() {
@@ -691,22 +707,28 @@ export class Game {
     this.muzzleFlashes.push({ x: p.x, y: p.y - 26, t: 0.12, weapon });
 
     if (weapon === "rocket") {
-      this.bullets.push({
-        x: p.x,
-        y: p.y - 28,
-        w: 14,
-        h: 28,
-        vy: -def.speed,
-        vx: 0,
-        damage: def.damage,
-        pierce: false,
-        splash: def.splash,
-        splashDamage: def.splashDamage,
-        homing: def.homing,
-        color: def.color,
-        life: 2.2,
-        weapon,
-      });
+      const speed = def.speed;
+      const cone = [-0.28, 0, 0.28];
+      for (const ang of cone) {
+        const vx = Math.sin(ang) * speed;
+        const vy = -Math.cos(ang) * speed;
+        this.bullets.push({
+          x: p.x + Math.sin(ang) * 12,
+          y: p.y - 28,
+          w: 14,
+          h: 28,
+          vy,
+          vx,
+          damage: def.damage,
+          pierce: false,
+          splash: def.splash,
+          splashDamage: def.splashDamage,
+          homing: def.homing,
+          color: def.color,
+          life: 2.2,
+          weapon,
+        });
+      }
       this.audio.shoot("rocket");
       addTrauma(this.juice, 0.08);
       return;
@@ -792,14 +814,14 @@ export class Game {
       b.x += (b.vx || 0) * dt;
       b.y += b.vy * dt;
       b.life -= dt;
-      // Bright trail so hostile shots read clearly
-      if (Math.random() < 0.85) {
+      // Lighter trails — less screen clutter in dense fights
+      if (Math.random() < (b.fromFinal ? 0.25 : 0.55)) {
         spawnBurst(this.particles, b.x, b.y, {
-          count: b.heavy ? 3 : 2,
-          speed: 40,
-          colors: b.heavy ? ["#ffb060", "#ffe08a", "#ffffff"] : ["#ffffff", "#b8d0ff", "#7aa6ff"],
-          life: 0.22,
-          size: b.heavy ? 3.2 : 2.6,
+          count: 1,
+          speed: 30,
+          colors: b.heavy ? ["#ffb060", "#ffe08a"] : ["#ffffff", "#b8d0ff"],
+          life: 0.16,
+          size: b.heavy ? 2.4 : 2,
           glow: true,
           gravity: 0,
           spread: Math.PI * 2,
@@ -826,8 +848,8 @@ export class Game {
         e.fireCd -= dt;
         if (e.fireCd <= 0) {
           this.enemyShoot(e);
-          const haste = e.final ? Math.max(0.55, 1.1 - e.bossPhase * 0.18) : 1;
-          e.fireCd = e.fireRate * (0.7 + Math.random() * 0.45) * haste;
+          const haste = e.final ? Math.max(0.75, 1.25 - e.bossPhase * 0.12) : 1;
+          e.fireCd = e.fireRate * (0.85 + Math.random() * 0.4) * haste;
         }
       }
 
@@ -850,12 +872,12 @@ export class Game {
     e.chargeCd -= dt;
 
     if (e.specialCd <= 0) {
-      this.finalBossRing(e, e.bossPhase >= 3 ? 18 : 12);
-      e.specialCd = e.bossPhase === 1 ? 3.2 : e.bossPhase === 2 ? 2.4 : 1.7;
+      this.finalBossRing(e, e.bossPhase >= 3 ? 10 : 7);
+      e.specialCd = e.bossPhase === 1 ? 4.2 : e.bossPhase === 2 ? 3.4 : 2.6;
     }
 
     if (e.spawnCd <= 0 && e.bossPhase >= 2) {
-      const n = e.bossPhase === 3 ? 4 : 2;
+      const n = e.bossPhase === 3 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         const type = Math.random() > 0.5 ? "dart" : "scout";
         this.pendingSpawns.push(
@@ -863,7 +885,7 @@ export class Game {
         );
       }
       this.flashMessage("COMMANDER DEPLOYS ESCORTS", 1);
-      e.spawnCd = e.bossPhase === 3 ? 4.5 : 6;
+      e.spawnCd = e.bossPhase === 3 ? 6.5 : 8;
       this.audio.alert();
     }
 
@@ -891,6 +913,7 @@ export class Game {
         color: "#ffb020",
         life: 3.5,
         heavy: true,
+        fromFinal: true,
       });
     }
   }
@@ -960,20 +983,21 @@ export class Game {
     const black = e.polarity === "black" || e.final;
     const bulletColor = black ? "#1a1e26" : "#f2f5ff";
     spawnBurst(this.particles, e.x, e.y + e.h / 2, {
-      count: e.type === "boss" || e.final ? 14 : 8,
-      speed: 160,
+      count: e.final ? 4 : e.type === "boss" ? 8 : 8,
+      speed: 140,
       colors: black ? ["#ff8a40", "#ffc060", "#ffffff"] : ["#ffffff", "#c8dcff", "#7aa6ff"],
-      life: 0.28,
-      size: 3.4,
+      life: 0.22,
+      size: e.final ? 2.4 : 3.4,
       glow: true,
       gravity: 0,
       angle: aim,
-      spread: 0.9,
+      spread: 0.7,
     });
     if (e.final) {
       const phase = e.bossPhase || 1;
-      const shots = 5 + phase * 2;
-      const spread = 0.14 + phase * 0.03;
+      // Leaner patterns — final fight was too dense
+      const shots = 2 + phase; // 3–5
+      const spread = 0.1 + phase * 0.02;
       for (let i = 0; i < shots; i++) {
         const a = aim + (i - (shots - 1) / 2) * spread;
         const dark = i % 2 === 0;
@@ -988,38 +1012,41 @@ export class Game {
           color: dark ? "#1a1e26" : "#f2f5ff",
           life: 3.2,
           heavy: dark,
+          fromFinal: true,
         });
       }
-      if (phase >= 2) {
-        for (let i = 0; i < 8; i++) {
-          const a = e.phase * 2.5 + (Math.PI * 2 * i) / 8;
+      if (phase >= 2 && Math.random() < 0.55) {
+        for (let i = 0; i < 4; i++) {
+          const a = e.phase * 2.5 + (Math.PI * 2 * i) / 4;
           this.enemyBullets.push({
             x: e.x,
             y: e.y,
             w: 7,
             h: 7,
-            vx: Math.cos(a) * 240,
-            vy: Math.sin(a) * 240,
+            vx: Math.cos(a) * 220,
+            vy: Math.sin(a) * 220,
             damage: 14,
             color: i % 2 ? "#f2f5ff" : "#1a1e26",
-            life: 3,
+            life: 2.6,
             heavy: i % 2 === 0,
+            fromFinal: true,
           });
         }
       }
-      if (phase >= 3 && Math.random() < 0.6) {
-        for (let i = -3; i <= 3; i++) {
+      if (phase >= 3 && Math.random() < 0.35) {
+        for (let i = -1; i <= 1; i++) {
           this.enemyBullets.push({
-            x: e.x + i * 22,
+            x: e.x + i * 28,
             y: e.y + e.h / 2,
             w: 7,
             h: 12,
-            vx: i * 18,
+            vx: i * 14,
             vy: e.bulletSpeed * 0.95,
             damage: 16,
             color: bulletColor,
-            life: 3,
+            life: 2.8,
             heavy: black,
+            fromFinal: true,
           });
         }
       }
@@ -1178,11 +1205,17 @@ export class Game {
       this.shake = Math.max(this.shake, 18);
       hitStop(this.juice, 0.14);
       impactFlash(this.juice, "rgba(255,90,200,0.28)", 0.28, 0.55);
+      this.addLaserCharge(20);
+      this.killShakeScale = 1;
     } else {
       spawnExplosion(this.particles, e.x, e.y, { big: false });
       this.burst(e.x, e.y, "#4de8ff", 14, 220);
-      addTrauma(this.juice, 0.1);
-      this.shake = Math.max(this.shake, 4);
+      // Soften shake when many small kills chain together
+      const scale = this.killShakeScale ?? 1;
+      addTrauma(this.juice, 0.08 * scale);
+      this.shake = Math.max(this.shake, 3.2 * scale);
+      this.killShakeScale = Math.max(0.12, scale * 0.42);
+      this.addLaserCharge(5);
     }
     this.audio.explosion(big);
     if (!fromSuicide) {
@@ -1358,6 +1391,84 @@ export class Game {
     });
   }
 
+  addLaserCharge(amount) {
+    const wasReady = this.laserCharge >= 100;
+    this.laserCharge = Math.min(100, (this.laserCharge || 0) + amount);
+    if (!wasReady && this.laserCharge >= 100) {
+      this.flashMessage("SUPER LASER READY — SPACE", 1.6);
+      this.audio.alert();
+    }
+  }
+
+  fireSuperLaser() {
+    if (this.state !== STATES.PLAYING || !this.player?.alive) return;
+    if ((this.laserCharge || 0) < 100) return;
+    if (this.superLaser) return;
+    this.laserCharge = 0;
+    this.superLaser = {
+      t: 0.65,
+      tick: 0,
+      x: this.player.x,
+      halfW: 28,
+      damage: 55,
+    };
+    hitStop(this.juice, 0.08);
+    impactFlash(this.juice, "rgba(255,79,216,0.24)", 0.24, 0.4);
+    addTrauma(this.juice, 0.35);
+    this.shake = Math.max(this.shake, 10);
+    this.audio.explosion(true);
+    this.flashMessage("SUPER LASER", 0.7);
+    spawnBurst(this.particles, this.player.x, this.player.y - 40, {
+      count: 28,
+      speed: 320,
+      colors: ["#ffffff", "#ff4fd8", "#4de8ff", "#ffe66d"],
+      life: 0.35,
+      size: 3.5,
+      glow: true,
+      gravity: 0,
+      angle: -Math.PI / 2,
+      spread: 0.5,
+    });
+  }
+
+  updateSuperLaser(dt) {
+    const beam = this.superLaser;
+    if (!beam) return;
+    beam.t -= dt;
+    beam.tick -= dt;
+    beam.x = this.player?.x ?? beam.x;
+    if (beam.tick <= 0) {
+      beam.tick = 0.05;
+      for (const e of this.enemies) {
+        if (e.hp <= 0) continue;
+        if (Math.abs(e.x - beam.x) <= beam.halfW + e.w / 2 && e.y < this.player.y) {
+          e.hp -= beam.damage;
+          e.flash = 0.1;
+          setSquash(e, 1.25, 0.75);
+          if (Math.random() < 0.4) {
+            spawnSparks(this.particles, e.x, e.y, 4);
+          }
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+      }
+      this.enemies = this.enemies.filter((e) => e.hp > 0);
+      // Clear enemy bullets caught in the beam corridor
+      this.enemyBullets = this.enemyBullets.filter(
+        (b) => Math.abs(b.x - beam.x) > beam.halfW + 8 || b.y > this.player.y
+      );
+      spawnBurst(this.particles, beam.x + (Math.random() - 0.5) * beam.halfW, this.player.y - 80 - Math.random() * 400, {
+        count: 2,
+        speed: 40,
+        colors: ["#ff4fd8", "#4de8ff", "#ffffff"],
+        life: 0.2,
+        size: 2.5,
+        glow: true,
+        gravity: 0,
+      });
+    }
+    if (beam.t <= 0) this.superLaser = null;
+  }
+
   syncHud() {
     const p = this.player;
     this.ui.score.textContent = String(this.score);
@@ -1365,6 +1476,9 @@ export class Game {
     this.ui.lives.textContent = String(Math.max(0, this.lives));
     this.ui.shield.style.transform = `scaleX(${clamp(p.shield / 100, 0, 1)})`;
     this.ui.hull.style.transform = `scaleX(${clamp(p.hull / 100, 0, 1)})`;
+    if (this.ui.laser) {
+      this.ui.laser.style.transform = `scaleX(${clamp((this.laserCharge || 0) / 100, 0, 1)})`;
+    }
     this.ui.ammoGun.textContent = "∞";
     this.ui.ammoIon.textContent = String(p.ammo.ion);
     this.ui.ammoPlasma.textContent = String(p.ammo.plasma);
@@ -1423,6 +1537,7 @@ export class Game {
     if (this.state !== STATES.TITLE) {
       this.drawPowerups(ctx);
       this.drawEnemies(ctx);
+      this.drawSuperLaser(ctx);
       this.drawBullets(ctx);
       if (this.player.alive || this.state === STATES.GAME_OVER) this.drawPlayer(ctx);
     } else {
@@ -1605,6 +1720,39 @@ export class Game {
         ctx.fillRect(e.x - 16, e.y - e.h / 2 - 10, 32 * (e.hp / e.maxHp), 3);
       }
     }
+  }
+
+  drawSuperLaser(ctx) {
+    const beam = this.superLaser;
+    if (!beam || !this.player) return;
+    const x = beam.x;
+    const top = 0;
+    const bottom = this.player.y - 10;
+    const w = beam.halfW * 2;
+    const pulse = 0.65 + Math.sin((this.juice?.time || 0) * 40) * 0.2;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createLinearGradient(x, bottom, x, top);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.15, "rgba(255,79,216,0.85)");
+    g.addColorStop(0.55, "rgba(77,232,255,0.7)");
+    g.addColorStop(1, "rgba(255,79,216,0.15)");
+    ctx.fillStyle = g;
+    ctx.globalAlpha = pulse;
+    ctx.fillRect(x - w / 2, top, w, bottom - top);
+    ctx.globalAlpha = pulse * 0.55;
+    ctx.fillRect(x - w * 0.22, top, w * 0.44, bottom - top);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, bottom);
+    ctx.lineTo(x, top);
+    ctx.stroke();
+    ctx.restore();
+
+    drawGlow(ctx, x, this.player.y - 30, 70, "rgba(255,79,216,0.55)", 0.55);
   }
 
   drawBullets(ctx) {

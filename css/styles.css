@@ -159,6 +159,15 @@ body::before {
   background: linear-gradient(90deg, #8a5018, var(--amber));
 }
 
+.bar.laser {
+  border-color: rgba(255, 90, 200, 0.5);
+}
+
+.bar.laser i {
+  background: linear-gradient(90deg, #5a1a80, #ff4fd8 55%, #4de8ff);
+  box-shadow: 0 0 10px rgba(255, 79, 216, 0.4);
+}
+
 .ammo-strip {
   display: flex;
   gap: 6px;

@@ -21,8 +21,9 @@ Then visit `http://localhost:8080`.
 | Input | Action |
 | --- | --- |
 | Mouse / WASD / Arrows | Move fighter |
-| Hold Left Click / Space | Fire |
-| `1` `2` `3` `4` | Gun / Ion / Plasma / Rockets |
+| Hold Left Click | Fire |
+| Space (at 100% laser) | Super laser |
+| `1` `2` `3` `4` | Gun / Ion / Plasma / Rockets (3-shot cone) |
 | `0` or Enter twice | Self-destruct (eject ammo, clear sky) |
 | Right-click twice | Self-destruct |
 | `P` / Esc | Pause |
