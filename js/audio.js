@@ -665,20 +665,45 @@ export class AudioBus {
 
   shoot(weapon) {
     if (weapon === "rocket") {
-      this.noise(0.08, 0.1, 400);
-      this.tone(160, 0.18, "sawtooth", 0.14, -70);
-      this.tone(90, 0.22, "triangle", 0.08, -20);
+      // Thruster whoosh + bass launch thump + descending growl
+      this.noise(0.12, 0.14, 320);
+      this.noise(0.18, 0.08, 900, 0.04);
+      this.tone(110, 0.12, "sine", 0.16, -50);
+      this.tone(220, 0.22, "sawtooth", 0.12, -140);
+      this.tone(70, 0.28, "triangle", 0.07, -15, 0.03);
     } else if (weapon === "plasma") {
-      this.tone(240, 0.1, "sawtooth", 0.11, -90);
-      this.tone(480, 0.08, "square", 0.05, 120);
-      this.noise(0.05, 0.05, 1200);
+      // Heavy energy pulse: low thump, mid blast, bright harmonic
+      this.tone(140, 0.14, "sine", 0.14, -40);
+      this.tone(280, 0.12, "sawtooth", 0.12, -120);
+      this.tone(560, 0.09, "square", 0.06, 180);
+      this.tone(840, 0.07, "triangle", 0.04, 220, 0.03);
+      this.noise(0.07, 0.07, 1100);
     } else if (weapon === "ion") {
-      this.tone(920, 0.07, "triangle", 0.09, 260);
-      this.tone(1380, 0.05, "sine", 0.05, 180);
+      // Electric arc: rising zap + sparkle crackle
+      this.tone(640, 0.08, "sawtooth", 0.08, 420);
+      this.tone(980, 0.06, "triangle", 0.09, 320);
+      this.tone(1480, 0.05, "sine", 0.06, 260);
+      this.tone(2100, 0.04, "sine", 0.035, 0, 0.02);
+      this.noise(0.04, 0.05, 2800);
     } else {
-      this.tone(700, 0.04, "square", 0.05, -160);
-      this.noise(0.03, 0.03, 1800);
+      // Kinetic gun: sharp metallic crack + body thump
+      this.tone(980, 0.035, "square", 0.07, -280);
+      this.tone(420, 0.055, "triangle", 0.06, -100);
+      this.tone(180, 0.05, "sine", 0.05, -40);
+      this.noise(0.035, 0.055, 2200);
     }
+  }
+
+  superLaser() {
+    // Charge snap → sustained beam roar → high scream
+    this.tone(180, 0.12, "sawtooth", 0.14, 220);
+    this.tone(90, 0.45, "sawtooth", 0.18, -20);
+    this.tone(360, 0.35, "square", 0.08, 80, 0.04);
+    this.tone(1200, 0.28, "sine", 0.07, 400, 0.06);
+    this.tone(2400, 0.22, "triangle", 0.045, 200, 0.08);
+    this.noise(0.35, 0.16, 500);
+    this.noise(0.2, 0.1, 1600, 0.05);
+    this.noise(0.15, 0.07, 3200, 0.1);
   }
 
   hit() {

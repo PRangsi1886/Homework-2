@@ -1416,7 +1416,7 @@ export class Game {
     impactFlash(this.juice, "rgba(255,79,216,0.24)", 0.24, 0.4);
     addTrauma(this.juice, 0.35);
     this.shake = Math.max(this.shake, 10);
-    this.audio.explosion(true);
+    this.audio.superLaser();
     this.flashMessage("SUPER LASER", 0.7);
     spawnBurst(this.particles, this.player.x, this.player.y - 40, {
       count: 28,
