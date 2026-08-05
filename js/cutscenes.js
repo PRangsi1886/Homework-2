@@ -91,15 +91,16 @@ export class ImageCutscene {
     ctx.fillRect(0, 0, w, h);
 
     if (this.img && this.img.complete && this.img.naturalWidth) {
-      // Cover fit with slow Ken Burns zoom
-      const zoom = 1 + Math.min(0.08, this.time * 0.012);
+      // Contain fit — show the full dossier sheet (no crop)
       const iw = this.img.naturalWidth;
       const ih = this.img.naturalHeight;
-      const scale = Math.max(w / iw, h / ih) * zoom;
+      const padX = 16;
+      const padY = 80; // leave room for letterbox + caption
+      const scale = Math.min((w - padX * 2) / iw, (h - padY * 2) / ih);
       const dw = iw * scale;
       const dh = ih * scale;
       const dx = (w - dw) / 2;
-      const dy = (h - dh) / 2 - Math.min(20, this.time * 2);
+      const dy = (h - dh) / 2 - 12;
       ctx.drawImage(this.img, dx, dy, dw, dh);
     } else if (this._failed) {
       ctx.fillStyle = "#eef4ff";
@@ -108,10 +109,10 @@ export class ImageCutscene {
       ctx.fillText("Agent dossier unavailable", w / 2, h / 2);
     }
 
-    // Soft vignette
-    const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.72);
+    // Soft vignette (light — don't obscure the sheet)
+    const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, h * 0.85);
     g.addColorStop(0, "rgba(0,0,0,0)");
-    g.addColorStop(1, "rgba(0,0,0,0.55)");
+    g.addColorStop(1, "rgba(0,0,0,0.35)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 
