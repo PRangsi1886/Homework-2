@@ -289,7 +289,7 @@ export class Game {
   }
 
   beginIntroCutscene() {
-    // Hook: before Stage 1 — Escape cutscene (cutscenes.js / stick-figure timeline).
+    // Hook: before Stage 1 — Agent Zlisto dossier image cutscene.
     this.cutscene = createIntroCutscene(() => this.beginGameplay());
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;

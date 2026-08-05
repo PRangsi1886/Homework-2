@@ -1,130 +1,160 @@
 /**
- * Cutscene factories — Escape (intro) and Victory (ending).
- * Beat sheets from the stick-figure cutscene system reference.
+ * Cutscene factories — Agent Zlisto intro (image) + Victory (stick-figure ending).
  */
 
 import { W, H } from "./entities.js";
 import { CutsceneTimeline } from "./cutsceneTimeline.js";
 import { StickFigure, PILOT_COLOR, LOVE_COLOR, BOSS_COLOR } from "./stickFigure.js";
 
-/** Cutscene A — Escape (before Stage 1). */
-export function buildIntroCutscene({ canvasWidth = W, canvasHeight = H } = {}) {
-  const cx = canvasWidth / 2;
-  const cy = canvasHeight / 2;
-  const ground = cy + 40;
+const INTRO_IMAGE_SRC = "assets/cutscenes/agent-zlisto.png";
 
-  return [
-    // 1. Running down corridor
-    {
-      time: 2.5,
-      actor: "pilot",
-      pose: "run",
-      runCycle: true,
-      bg: "corridor",
-      actorX: cx - 220,
-      actorY: ground,
-      moveX: cx - 40,
-      cameraX: cx - 120,
-      cameraY: ground - 30,
-      cameraZoom: 1,
-      particlesAt: {
-        x: cx - 280,
-        y: ground + 20,
-        count: 15,
-        opts: { color: "#ff8844", speed: 4, life: 30 },
-      },
-      screenShake: { intensity: 6, duration: 20 },
-      emitChance: 0.45,
-      text: "The ship is going down.",
-      showPhoto: false,
-      hideActors: ["love", "boss"],
-    },
-    // 2. Stops at hatch, breathing
-    {
-      time: 1.0,
-      actor: "pilot",
-      pose: "breathHeavy",
-      bg: "corridor",
-      cameraX: cx,
-      cameraY: ground - 40,
-      cameraZoom: 1.2,
-      text: "",
-    },
-    // 3. Reaches into jacket
-    {
-      time: 1.5,
-      actor: "pilot",
-      pose: "reachIntoJacket",
-      bg: "corridor",
-      cameraX: cx,
-      cameraY: ground - 50,
-      cameraZoom: 1.5,
-    },
-    // 4. Holds photo, camera pushes in
-    {
-      time: 2.5,
-      actor: "pilot",
-      pose: "holdPhoto",
-      bg: "corridor",
-      showPhoto: true,
-      cameraX: cx,
-      cameraY: ground - 70,
-      cameraZoom: 2.2,
-    },
-    // 5. Clenches fist, determined
-    {
-      time: 1.0,
-      actor: "pilot",
-      pose: "clenchFist",
-      bg: "corridor",
-      showPhoto: false,
-      cameraX: cx,
-      cameraY: ground - 40,
-      cameraZoom: 1.4,
-      text: "I'll come back for you.",
-    },
-    // 6. Runs into cockpit
-    {
-      time: 1.5,
-      actor: "pilot",
-      pose: "run",
-      runCycle: true,
-      bg: "hangar",
-      moveX: cx + 180,
-      cameraX: cx + 80,
-      cameraY: ground - 20,
-      cameraZoom: 1,
-      text: "",
-      showPhoto: false,
-    },
-    // 7. Ship launches — wide pull-back (pilot exits frame; FX sell the launch)
-    {
-      time: 2.5,
-      actor: "pilot",
-      pose: "idle",
-      bg: "hangar",
-      hideActors: ["pilot"],
-      cameraX: cx + 200,
-      cameraY: ground - 120,
-      cameraZoom: 0.55,
-      particlesAt: {
-        x: cx + 80,
-        y: ground - 20,
-        count: 30,
-        opts: { color: "#88ccff", speed: 6, life: 50 },
-      },
-      screenShake: { intensity: 10, duration: 25 },
-    },
-    // 8. Fade to Stage 1
-    {
-      time: 0.5,
-      actor: null,
-      pose: null,
-      bg: "void",
-      fade: "out",
-      text: "",
-    },
-  ];
+/**
+ * Full-bleed image cutscene (intro). Same contract as timeline cutscenes:
+ * update(dt) / draw(ctx) / skip() / onDone.
+ */
+export class ImageCutscene {
+  /**
+   * @param {object} opts
+   * @param {string} opts.src
+   * @param {string} [opts.title]
+   * @param {string} [opts.subtitle]
+   * @param {number} [opts.duration] seconds before auto-finish
+   * @param {Function} [opts.onDone]
+   */
+  constructor({
+    src,
+    title = "",
+    subtitle = "",
+    duration = 6.5,
+    onDone,
+    width = W,
+    height = H,
+  } = {}) {
+    this.src = src;
+    this.title = title;
+    this.subtitle = subtitle;
+    this.duration = duration;
+    this.onDone = onDone;
+    this.onComplete = onDone;
+    this.w = width;
+    this.h = height;
+    this.time = 0;
+    this.done = false;
+    this.fade = 1; // start black, fade in
+    this.img = null;
+    this._failed = false;
+
+    if (typeof Image !== "undefined") {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        this.img = img;
+      };
+      img.onerror = () => {
+        this._failed = true;
+      };
+      img.src = src;
+    } else {
+      this._failed = true;
+    }
+  }
+
+  skip() {
+    if (this.done) return;
+    this.done = true;
+    this.onDone?.();
+  }
+
+  update(dt) {
+    if (this.done) return;
+    this.time += dt;
+
+    // Fade in first 0.7s, hold, fade out last 0.9s
+    if (this.time < 0.7) {
+      this.fade = 1 - this.time / 0.7;
+    } else if (this.time > this.duration - 0.9) {
+      this.fade = Math.min(1, (this.time - (this.duration - 0.9)) / 0.9);
+    } else {
+      this.fade = 0;
+    }
+
+    if (this.time >= this.duration) {
+      this.skip();
+    }
+  }
+
+  draw(ctx) {
+    if (this.done) return;
+    const { w, h } = this;
+
+    ctx.fillStyle = "#02050b";
+    ctx.fillRect(0, 0, w, h);
+
+    if (this.img && this.img.complete && this.img.naturalWidth) {
+      // Cover fit with slow Ken Burns zoom
+      const zoom = 1 + Math.min(0.08, this.time * 0.012);
+      const iw = this.img.naturalWidth;
+      const ih = this.img.naturalHeight;
+      const scale = Math.max(w / iw, h / ih) * zoom;
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2 - Math.min(20, this.time * 2);
+      ctx.drawImage(this.img, dx, dy, dw, dh);
+    } else if (this._failed) {
+      ctx.fillStyle = "#eef4ff";
+      ctx.font = "600 20px Rajdhani, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Agent dossier unavailable", w / 2, h / 2);
+    }
+
+    // Soft vignette
+    const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.72);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    // Letterbox
+    ctx.fillStyle = "#010308";
+    ctx.fillRect(0, 0, w, 72);
+    ctx.fillRect(0, h - 72, w, 72);
+
+    // Caption
+    ctx.save();
+    ctx.textAlign = "center";
+    if (this.title) {
+      ctx.fillStyle = "#f0a23a";
+      ctx.font = "700 13px Orbitron, sans-serif";
+      ctx.fillText("CAPITAL SYNDICATE · ACT 1", w / 2, h * 0.78);
+      ctx.fillStyle = "#eef4ff";
+      ctx.font = "700 28px Rajdhani, sans-serif";
+      ctx.fillText(this.title, w / 2, h * 0.78 + 34);
+    }
+    if (this.subtitle) {
+      ctx.fillStyle = "rgba(158, 179, 209, 0.95)";
+      ctx.font = "600 16px Rajdhani, sans-serif";
+      ctx.fillText(this.subtitle, w / 2, h * 0.78 + 58);
+    }
+    ctx.restore();
+
+    // Progress
+    const progress = Math.min(1, this.time / Math.max(0.01, this.duration));
+    ctx.fillStyle = "rgba(62, 240, 208, 0.35)";
+    ctx.fillRect(0, h - 74, w * progress, 2);
+
+    ctx.fillStyle = "rgba(158, 179, 209, 0.85)";
+    ctx.font = "600 14px Rajdhani, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("CLICK / SPACE TO SKIP", w - 24, h - 24);
+
+    if (this.fade > 0.01) {
+      ctx.globalAlpha = Math.min(1, this.fade);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+    }
+  }
 }
 
 /** Cutscene B — Victory (after final boss). */
@@ -134,7 +164,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
   const ground = cy + 60;
 
   return [
-    // Fade in from gameplay
     {
       time: 0.5,
       actor: null,
@@ -148,7 +177,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       cameraZoom: 1.1,
       text: "",
     },
-    // 1. Boss collapses
     {
       time: 1.5,
       actor: "boss",
@@ -169,7 +197,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       hitstopMs: 90,
       text: "",
     },
-    // 2. Pilot lowers weapon, breathes
     {
       time: 1.5,
       actor: "pilot",
@@ -182,7 +209,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       cameraY: ground - 50,
       cameraZoom: 1.3,
     },
-    // 3. Pulls photo again — mirrors intro
     {
       time: 2.5,
       actor: "pilot",
@@ -193,7 +219,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       cameraY: ground - 70,
       cameraZoom: 2.2,
     },
-    // 3b. Small smile
     {
       time: 1.5,
       actor: "pilot",
@@ -205,7 +230,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       cameraZoom: 2.2,
       text: "I'll come back for you.",
     },
-    // 4. Wide shot / sunrise callback
     {
       time: 2.5,
       actor: "pilot",
@@ -218,7 +242,6 @@ export function buildEndingCutscene({ canvasWidth = W, canvasHeight = H, score =
       cameraZoom: 0.55,
       text: "",
     },
-    // 5. Fade to closing text
     {
       time: 1.8,
       actor: null,
@@ -259,16 +282,15 @@ function makeActors() {
   };
 }
 
-/** Intro: Escape → Stage 1. Same contract as game.js expects. */
+/** Intro: Agent Zlisto dossier image → Stage 1. */
 export function createIntroCutscene(onDone) {
-  const tl = new CutsceneTimeline({
-    actors: makeActors(),
-    onComplete: onDone,
-    width: W,
-    height: H,
+  return new ImageCutscene({
+    src: INTRO_IMAGE_SRC,
+    title: "Welcome Agent Zlisto",
+    subtitle: "Operation Ferrum Wings",
+    duration: 6.5,
+    onDone,
   });
-  tl.load(buildIntroCutscene({ canvasWidth: W, canvasHeight: H }));
-  return tl;
 }
 
 /** Victory: after final boss → score screen. */
@@ -280,7 +302,6 @@ export function createVictoryCutscene(score, onDone) {
     height: H,
   });
   tl.load(buildEndingCutscene({ canvasWidth: W, canvasHeight: H, score }));
-  // Position boss for collapse beat
   if (tl.actors.boss) {
     tl.actors.boss.x = W / 2 + 50;
     tl.actors.boss.y = H / 2 + 60;
@@ -294,5 +315,4 @@ export function createVictoryCutscene(score, onDone) {
   return tl;
 }
 
-// Re-exports for tweaking / debugging
 export { CutsceneTimeline, StickFigure, POSES } from "./cutsceneTimeline.js";
