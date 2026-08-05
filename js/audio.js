@@ -3,7 +3,7 @@ const MUTE_KEY = "ferrum-wing-muted";
 const BGM_DB = "ferrum-wing-bgm";
 const BGM_STORE = "tracks";
 const BGM_KEY = "custom";
-const BASE_GAIN = 0.55;
+const BASE_GAIN = 0.6875; // was 0.55 — ~25% louder master bus
 const BUNDLED_BGM = [
   "assets/bgm.mp3",
   "assets/bgm.ogg",

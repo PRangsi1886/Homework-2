@@ -792,6 +792,20 @@ export class Game {
       b.x += (b.vx || 0) * dt;
       b.y += b.vy * dt;
       b.life -= dt;
+      // Bright trail so hostile shots read clearly
+      if (Math.random() < 0.85) {
+        spawnBurst(this.particles, b.x, b.y, {
+          count: b.heavy ? 3 : 2,
+          speed: 40,
+          colors: b.heavy ? ["#ffb060", "#ffe08a", "#ffffff"] : ["#ffffff", "#b8d0ff", "#7aa6ff"],
+          life: 0.22,
+          size: b.heavy ? 3.2 : 2.6,
+          glow: true,
+          gravity: 0,
+          spread: Math.PI * 2,
+          angle: Math.atan2(-(b.vy || 1), -(b.vx || 0)),
+        });
+      }
     }
     this.enemyBullets = this.enemyBullets.filter((b) => b.life > 0 && b.y < H + 40 && b.y > -40);
   }
@@ -945,6 +959,17 @@ export class Game {
     const aim = Math.atan2(this.player.y - e.y, this.player.x - e.x);
     const black = e.polarity === "black" || e.final;
     const bulletColor = black ? "#1a1e26" : "#f2f5ff";
+    spawnBurst(this.particles, e.x, e.y + e.h / 2, {
+      count: e.type === "boss" || e.final ? 14 : 8,
+      speed: 160,
+      colors: black ? ["#ff8a40", "#ffc060", "#ffffff"] : ["#ffffff", "#c8dcff", "#7aa6ff"],
+      life: 0.28,
+      size: 3.4,
+      glow: true,
+      gravity: 0,
+      angle: aim,
+      spread: 0.9,
+    });
     if (e.final) {
       const phase = e.bossPhase || 1;
       const shots = 5 + phase * 2;
@@ -1610,8 +1635,18 @@ export class Game {
       }
     }
     for (const b of this.enemyBullets) {
+      const size = b.heavy ? b.w + 14 : b.w + 12;
+      // Outer glow halo
+      drawGlow(
+        ctx,
+        b.x,
+        b.y,
+        size * 1.35,
+        b.heavy ? "rgba(255,160,60,0.85)" : "rgba(200,230,255,0.9)",
+        0.55
+      );
       const img = b.heavy ? this.sprites.enemyBulletHeavy : this.sprites.enemyBullet;
-      drawSprite(ctx, img, b.x, b.y, b.w + 4, b.h + 4);
+      drawSprite(ctx, img, b.x, b.y, size, size);
     }
   }
 

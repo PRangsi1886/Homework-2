@@ -258,8 +258,8 @@ function drawAmmo(kind) {
     ion: [16, 40],
     plasma: [22, 36],
     rocket: [18, 40],
-    enemy: [14, 14],
-    enemyHeavy: [16, 16],
+    enemy: [22, 22],
+    enemyHeavy: [26, 26],
   };
   const [w, h] = sizes[kind] || [14, 24];
   const c = makeCanvas(w, h);
@@ -332,26 +332,30 @@ function drawAmmo(kind) {
     ctx.closePath();
     ctx.fill();
   } else if (kind === "enemy") {
-    // white polarity orb
-    glowDot(ctx, cx, cx, w / 2, "rgba(255,255,255,0.95)");
-    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 1);
+    // Bright white-polarity orb — high visibility against starfield
+    glowDot(ctx, cx, cx, w * 0.72, "rgba(255,255,255,1)", 1);
+    glowDot(ctx, cx, cx, w * 0.45, "rgba(180,220,255,0.95)", 0.95);
+    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 0.5);
     g.addColorStop(0, "#ffffff");
-    g.addColorStop(0.45, "#d0d8e8");
-    g.addColorStop(1, "rgba(80,90,120,0)");
+    g.addColorStop(0.35, "#e8f0ff");
+    g.addColorStop(0.7, "#9eb8ff");
+    g.addColorStop(1, "rgba(120,160,255,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(cx, cx, w / 2 - 1, 0, Math.PI * 2);
+    ctx.arc(cx, cx, w / 2 - 0.5, 0, Math.PI * 2);
     ctx.fill();
   } else if (kind === "enemyHeavy") {
-    // black polarity orb
-    glowDot(ctx, cx, cx, w / 2, "rgba(255,160,70,0.75)");
-    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 1);
-    g.addColorStop(0, "#f0f2f6");
-    g.addColorStop(0.3, "#1a1e26");
-    g.addColorStop(1, "rgba(0,0,0,0)");
+    // Bright amber / black-polarity orb
+    glowDot(ctx, cx, cx, w * 0.75, "rgba(255,200,90,1)", 1);
+    glowDot(ctx, cx, cx, w * 0.48, "rgba(255,140,60,0.95)", 0.95);
+    const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, w / 2 - 0.5);
+    g.addColorStop(0, "#fff8e8");
+    g.addColorStop(0.25, "#ffc060");
+    g.addColorStop(0.55, "#ff7a30");
+    g.addColorStop(1, "rgba(40,10,0,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(cx, cx, w / 2 - 1, 0, Math.PI * 2);
+    ctx.arc(cx, cx, w / 2 - 0.5, 0, Math.PI * 2);
     ctx.fill();
   }
   return c;
