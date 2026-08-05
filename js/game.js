@@ -1170,16 +1170,19 @@ export class Game {
     e._dead = true;
     e.hp = 0;
     const big = e.type === "boss";
-    spawnExplosion(this.particles, e.x, e.y, { big });
-    this.burst(e.x, e.y, big ? "#ff4fd8" : "#4de8ff", big ? 36 : 14, big ? 380 : 220);
-    addTrauma(this.juice, big ? 0.72 : 0.22);
-    this.shake = Math.max(this.shake, big ? 18 : 7);
     if (big) {
+      // Epic screen punch — bosses only
+      spawnExplosion(this.particles, e.x, e.y, { big: true });
+      this.burst(e.x, e.y, "#ff4fd8", 36, 380);
+      addTrauma(this.juice, 0.72);
+      this.shake = Math.max(this.shake, 18);
       hitStop(this.juice, 0.14);
       impactFlash(this.juice, "rgba(255,90,200,0.28)", 0.28, 0.55);
     } else {
-      hitStop(this.juice, 0.045);
-      impactFlash(this.juice, "rgba(77,232,255,0.14)", 0.14, 0.35);
+      spawnExplosion(this.particles, e.x, e.y, { big: false });
+      this.burst(e.x, e.y, "#4de8ff", 14, 220);
+      addTrauma(this.juice, 0.1);
+      this.shake = Math.max(this.shake, 4);
     }
     this.audio.explosion(big);
     if (!fromSuicide) {
