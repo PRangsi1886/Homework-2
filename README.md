@@ -6,15 +6,19 @@ You command robotic fighters escorting a freighter across **four sectors**. Clea
 
 ## Play
 
-Open `index.html` in a modern browser, or serve locally:
+**Always use this link** (same URL for every update on this branch):
+
+https://raw.githack.com/PRangsi1886/Homework-2/cursor/capital-syndicate-0ccd/index.html
+
+Hard-refresh (`Ctrl+Shift+R` / `Cmd+Shift+R`) if a change doesn’t show yet — the branch CDN can take a minute to refresh. Do not use commit-pinned `rawcdn` links; those freeze an old build forever.
+
+Or open `index.html` locally:
 
 ```bash
 python3 -m http.server 8080
 ```
 
 Then visit `http://localhost:8080`.
-
-**Shareable build (latest commit on this branch):** see the pull request description for the live CDN link.
 
 ## Controls
 
