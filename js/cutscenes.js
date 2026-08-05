@@ -1,62 +1,59 @@
 /**
- * Cutscene factories — Agent Zlisto intro (image) + Victory (stick-figure ending).
+ * Cutscene factories — Agent Zlisto intro (image slides) + Victory ending.
  */
 
 import { W, H } from "./entities.js";
 import { CutsceneTimeline } from "./cutsceneTimeline.js";
 import { StickFigure, PILOT_COLOR, LOVE_COLOR, BOSS_COLOR } from "./stickFigure.js";
 
-const INTRO_IMAGE_SRC = "assets/cutscenes/agent-zlisto.png";
-
 /**
- * Full-bleed image cutscene (intro). Same contract as timeline cutscenes:
+ * Multi-slide image cutscene. Same contract as timeline cutscenes:
  * update(dt) / draw(ctx) / skip() / onDone.
+ *
+ * scenes: [{ src, title, subtitle, duration }]
  */
 export class ImageCutscene {
-  /**
-   * @param {object} opts
-   * @param {string} opts.src
-   * @param {string} [opts.title]
-   * @param {string} [opts.subtitle]
-   * @param {number} [opts.duration] seconds before auto-finish
-   * @param {Function} [opts.onDone]
-   */
-  constructor({
-    src,
-    title = "",
-    subtitle = "",
-    duration = 6.5,
-    onDone,
-    width = W,
-    height = H,
-  } = {}) {
-    this.src = src;
-    this.title = title;
-    this.subtitle = subtitle;
-    this.duration = duration;
+  constructor({ scenes = [], onDone, width = W, height = H } = {}) {
+    this.scenes = scenes.length
+      ? scenes
+      : [{ src: "", title: "", subtitle: "", duration: 5 }];
     this.onDone = onDone;
     this.onComplete = onDone;
     this.w = width;
     this.h = height;
+    this.sceneIndex = 0;
     this.time = 0;
     this.done = false;
-    this.fade = 1; // start black, fade in
-    this.img = null;
-    this._failed = false;
+    this.fade = 1;
+    this.images = {};
+    this._failed = {};
 
     if (typeof Image !== "undefined") {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        this.img = img;
-      };
-      img.onerror = () => {
-        this._failed = true;
-      };
-      img.src = src;
-    } else {
-      this._failed = true;
+      for (const scene of this.scenes) {
+        if (!scene.src || this.images[scene.src]) continue;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          this.images[scene.src] = img;
+        };
+        img.onerror = () => {
+          this._failed[scene.src] = true;
+        };
+        img.src = scene.src;
+      }
     }
+  }
+
+  get current() {
+    return this.scenes[this.sceneIndex] || this.scenes[0];
+  }
+
+  get title() {
+    return this.current?.title || "";
+  }
+
+  get duration() {
+    return this.scenes.reduce((s, sc) => s + (sc.duration || 5), 0);
   }
 
   skip() {
@@ -65,82 +62,94 @@ export class ImageCutscene {
     this.onDone?.();
   }
 
+  advanceScene() {
+    if (this.sceneIndex < this.scenes.length - 1) {
+      this.sceneIndex++;
+      this.time = 0;
+      this.fade = 1;
+      return;
+    }
+    this.skip();
+  }
+
   update(dt) {
     if (this.done) return;
     this.time += dt;
+    const scene = this.current;
+    const dur = Math.max(0.5, scene.duration || 5);
 
-    // Fade in first 0.7s, hold, fade out last 0.9s
-    if (this.time < 0.7) {
-      this.fade = 1 - this.time / 0.7;
-    } else if (this.time > this.duration - 0.9) {
-      this.fade = Math.min(1, (this.time - (this.duration - 0.9)) / 0.9);
+    if (this.time < 0.55) {
+      this.fade = 1 - this.time / 0.55;
+    } else if (this.time > dur - 0.7) {
+      this.fade = Math.min(1, (this.time - (dur - 0.7)) / 0.7);
     } else {
       this.fade = 0;
     }
 
-    if (this.time >= this.duration) {
-      this.skip();
+    if (this.time >= dur) {
+      this.advanceScene();
     }
   }
 
   draw(ctx) {
     if (this.done) return;
     const { w, h } = this;
+    const scene = this.current;
+    const img = this.images[scene.src];
 
     ctx.fillStyle = "#02050b";
     ctx.fillRect(0, 0, w, h);
 
-    if (this.img && this.img.complete && this.img.naturalWidth) {
-      // Contain fit — show the full dossier sheet (no crop)
-      const iw = this.img.naturalWidth;
-      const ih = this.img.naturalHeight;
+    if (img && img.complete && img.naturalWidth) {
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
       const padX = 16;
-      const padY = 80; // leave room for letterbox + caption
+      const padY = 80;
       const scale = Math.min((w - padX * 2) / iw, (h - padY * 2) / ih);
       const dw = iw * scale;
       const dh = ih * scale;
       const dx = (w - dw) / 2;
       const dy = (h - dh) / 2 - 12;
-      ctx.drawImage(this.img, dx, dy, dw, dh);
-    } else if (this._failed) {
+      ctx.drawImage(img, dx, dy, dw, dh);
+    } else if (this._failed[scene.src]) {
       ctx.fillStyle = "#eef4ff";
       ctx.font = "600 20px Rajdhani, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Agent dossier unavailable", w / 2, h / 2);
+      ctx.fillText("Scene unavailable", w / 2, h / 2);
     }
 
-    // Soft vignette (light — don't obscure the sheet)
     const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, h * 0.85);
     g.addColorStop(0, "rgba(0,0,0,0)");
     g.addColorStop(1, "rgba(0,0,0,0.35)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 
-    // Letterbox
     ctx.fillStyle = "#010308";
     ctx.fillRect(0, 0, w, 72);
     ctx.fillRect(0, h - 72, w, 72);
 
-    // Caption
     ctx.save();
     ctx.textAlign = "center";
-    if (this.title) {
-      ctx.fillStyle = "#f0a23a";
-      ctx.font = "700 13px Orbitron, sans-serif";
-      ctx.fillText("CAPITAL SYNDICATE · ACT 1", w / 2, h * 0.78);
+    ctx.fillStyle = "#f0a23a";
+    ctx.font = "700 13px Orbitron, sans-serif";
+    ctx.fillText("CAPITAL SYNDICATE · ACT 1", w / 2, h * 0.78);
+    if (scene.title) {
       ctx.fillStyle = "#eef4ff";
       ctx.font = "700 28px Rajdhani, sans-serif";
-      ctx.fillText(this.title, w / 2, h * 0.78 + 34);
+      ctx.fillText(scene.title, w / 2, h * 0.78 + 34);
     }
-    if (this.subtitle) {
+    if (scene.subtitle) {
       ctx.fillStyle = "rgba(158, 179, 209, 0.95)";
       ctx.font = "600 16px Rajdhani, sans-serif";
-      ctx.fillText(this.subtitle, w / 2, h * 0.78 + 58);
+      ctx.fillText(scene.subtitle, w / 2, h * 0.78 + 58);
     }
     ctx.restore();
 
-    // Progress
-    const progress = Math.min(1, this.time / Math.max(0.01, this.duration));
+    // Overall progress across all scenes
+    let elapsed = 0;
+    for (let i = 0; i < this.sceneIndex; i++) elapsed += this.scenes[i].duration || 5;
+    elapsed += this.time;
+    const progress = Math.min(1, elapsed / Math.max(0.01, this.duration));
     ctx.fillStyle = "rgba(62, 240, 208, 0.35)";
     ctx.fillRect(0, h - 74, w * progress, 2);
 
@@ -283,14 +292,24 @@ function makeActors() {
   };
 }
 
-/** Intro: Agent Zlisto dossier image → Stage 1. */
+/** Intro: Agent dossier → Legacy base → Stage 1. */
 export function createIntroCutscene(onDone) {
   return new ImageCutscene({
-    src: INTRO_IMAGE_SRC,
-    title: "Welcome Agent Zlisto",
-    subtitle: "Operation Ferrum Wings",
-    duration: 6.5,
     onDone,
+    scenes: [
+      {
+        src: "assets/cutscenes/agent-zlisto.png",
+        title: "Welcome Agent Zlisto",
+        subtitle: "Operation Ferrum Wings",
+        duration: 5.5,
+      },
+      {
+        src: "assets/cutscenes/legacy-base.png",
+        title: "Legacy Safehouse",
+        subtitle: "Primary ladder access — deployment failure",
+        duration: 6.0,
+      },
+    ],
   });
 }
 
