@@ -1,0 +1,196 @@
+{
+  "model": "gpt-5.6-luna",
+  "tts_model": "tts-1-hd",
+  "slides": [
+    {
+      "slide_id": 1,
+      "title": "A Game Demo That Doesn’t Just Sit There",
+      "original_description": "Vertical title-card opener built entirely in HTML/CSS/SVG: black space background, red-orange warning grid, a stylized chrome winged interceptor drawn with SVG polygons, and animated HUD scanlines. On-screen text: “CAPITAL SYNDICATE” / “OPERATION FERRUM WINGS” / “A playable browser shooter + a reel generated from one proposal.” Add a small browser-window frame and a pulsing “PLAY IN BROWSER” indicator. No stock imagery.",
+      "original_narration": "Most student game demos are silent screen recordings. Operation Ferrum Wings turns the project into a playable story hook—and a shareable reel.",
+      "strengths": [
+        "The concept has immediate visual identity: hazard red, electric cyan, chrome, scanlines, and a winged interceptor create a strong arcade-sci-fi signature.",
+        "The browser-window frame makes the key promise tangible—this is playable, not merely a recorded game—and supports the “play in browser” CTA.",
+        "The HTML/CSS/SVG approach is well aligned with a reel opener: it can deliver motion, atmosphere, and polish without stock imagery.",
+        "The narration establishes a useful contrast between a passive demo and a playable story hook, while the overall runtime can comfortably fit a fast opener."
+      ],
+      "weaknesses": [
+        "The on-screen messaging is carrying too many names and claims at once: “CAPITAL SYNDICATE,” “OPERATION FERRUM WINGS,” “A playable browser shooter + a reel generated from one proposal,” plus “PLAY IN BROWSER.” At a glance, the viewer may not know what to read first.",
+        "The phrase “a reel generated from one proposal” is strategically interesting but visually dense and somewhat process-focused for the first second. It competes with the game fantasy before the audience understands the game.",
+        "The description promises a rich winged interceptor, but the visible design intent is dominated by title text and the browser frame. The spacecraft should be a clear focal point rather than a detail discovered behind typography.",
+        "The small browser frame and pulsing CTA may be too subtle at 9:16, especially with the vignette, scanlines, grid, and multiple HUD layers all reducing contrast. “Small” is the wrong priority for the primary action cue.",
+        "The title-card composition is top-heavy: the title begins around the upper third while the browser window occupies a large lower block. Without a deliberate reveal or scale change, the card risks feeling like a static poster.",
+        "The narration is clear, but “Most student game demos” sounds slightly generic and potentially dismissive. It also explains the format before delivering the strongest hook: the viewer can play the game immediately.",
+        "The CSS uses external Google Fonts via @import. If this reel must render reliably offline or in a controlled capture pipeline, fallback behavior could alter line breaks and weaken the carefully tuned title layout."
+      ],
+      "improvement_suggestions": [
+        "Establish a strict hierarchy: 1) “PLAYABLE IN BROWSER,” 2) “OPERATION FERRUM WINGS,” 3) “CAPITAL SYNDICATE” as a small publisher/faction label. Remove “a reel generated from one proposal” from the hero card; move it to a later proof/process slide or reduce it to a tiny footer.",
+        "Use one short supporting line, such as “A browser shooter with a story hook,” instead of the longer explanatory sentence. Keep it to roughly 6–8 words so it remains legible on a phone.",
+        "Give the interceptor a 0.5–1 second hero reveal: begin as a silhouette or HUD lock-on shape, then snap into chrome detail with a red rim light. Let it overlap the browser frame slightly so the image feels dimensional.",
+        "Make the browser frame larger or crop it more aggressively, and place a high-contrast cyan/red CTA badge at its upper-right or lower-center. The CTA should be readable without relying on the pulsing animation.",
+        "Reduce competing motion: keep either the scanline drift or grid pulse subtle while reserving the strongest animation for the ship and CTA. Too many continuous effects flatten the visual hierarchy.",
+        "Use a quick sequence rather than a static stack: warning flash (0.0–0.3s), title lock-up (0.3–1.2s), ship/browser reveal (1.2–2.4s), CTA pulse and hold (2.4–3.5s). This gives the opener a readable rhythm.",
+        "Tighten the narration around the playable promise and let the visuals carry the project mechanics. Suggested delivery is about 10–12 seconds, leaving room for a final CTA beat.",
+        "For capture reliability, self-host or inline the fonts, and test the layout at the actual reel viewport. Add a reduced-motion fallback so the card remains legible if animation is disabled."
+      ],
+      "revised_description": "Vertical HTML/CSS/SVG title-card opener for a browser-playable arcade shooter. A black/navy space field and restrained red warning grid frame a chrome winged interceptor as it snaps into a cyan HUD lock-on. The browser window is large enough to read as playable, with a bold pulsing badge: “PLAY IN BROWSER.” Text hierarchy: small red “CAPITAL SYNDICATE,” dominant “OPERATION FERRUM WINGS,” and one concise subline: “A browser shooter with a story hook.” Use scanlines and grid motion sparingly so the ship reveal and CTA own the attention. No stock imagery.",
+      "revised_narration": "This isn’t a screen recording. It’s a playable browser shooter—with a story hook built in. Tap in: Operation Ferrum Wings.",
+      "visual_revision_notes": "Prioritize the CTA and ship over the explanatory copy. Open on a 0.2-second red warning flash, reveal the title, then bring the interceptor forward over the browser frame with a cyan lock-on sweep. Keep “CAPITAL SYNDICATE” small, remove the long “generated from one proposal” line from this slide, and hold the final composition for roughly 0.8 seconds so the title and CTA can be read. Use high-contrast text-safe zones and verify typography at 9:16 capture size.",
+      "change_summary": "Rebuilt the opener around the requested hierarchy: the readable “PLAY IN BROWSER” CTA is now the strongest callout, “OPERATION FERRUM WINGS” is the dominant title, and “CAPITAL SYNDICATE” is reduced to a small label. Removed the long proposal/reel copy and replaced it with the concise supporting line. Enlarged the browser preview, added a timed silhouette-to-chrome ship reveal with red rim light and cyan lock-on sweep, reduced scan/grid intensity, staged the warning/title/ship/CTA sequence, and added a reduced-motion fallback.",
+      "draft_html": "slides/slide_01_draft.html",
+      "final_html": "slides/slide_01.html"
+    },
+    {
+      "slide_id": 2,
+      "title": "Briefing: Agent Zlisto, Princess Lisa",
+      "original_description": "Use a two-panel cutscene-style composition: left panel shows an SVG portrait silhouette of Agent Zlisto with visor highlights; right panel shows Princess Lisa as a holographic transmission inside a circular signal frame. Between them, a red “ACT 1 / INCOMING TRANSMISSION” label and a thin route line leading toward a sector map. On-screen text: “THE STAKES START BEFORE THE FIRST SHOT.” Include a subtle audio-waveform graphic to signal ducked music and dialogue.",
+      "original_narration": "Before combat, Agent Zlisto receives a transmission from Princess Lisa. The intro cutscene establishes the mission, so players know what they’re fighting for.",
+      "strengths": [
+        "Strong cinematic briefing concept with a clear two-character relationship and pre-combat stakes.",
+        "The cyan/magenta/red palette supports a graphic-novel sci-fi tone while giving the transmission marker useful urgency.",
+        "The HTML establishes a deliberate hierarchy: title, large visual frame, central red label, route line, sector map, and waveform.",
+        "SVG silhouettes, hologram rings, scanlines, grid, and restrained motion are well matched to the intended style.",
+        "The narration is concise and communicates both the event and its story purpose."
+      ],
+      "weaknesses": [
+        "The composition is visually busy: title, two large panels, red label, route, map, waveform, caption, grid, scanlines, and likely additional footer elements compete for attention.",
+        "The red label is positioned over the center seam and route, potentially obscuring the relationship between the two panels rather than acting as a clean bridge.",
+        "The description says the route line leads toward a sector map, but the map is placed low and right; the route may read as an unrelated decorative line unless its endpoint is visibly connected to the map.",
+        "The phrase “SVG portrait silhouette” describes implementation rather than the intended visual read; define distinct character cues so Agent Zlisto and Princess Lisa are instantly distinguishable.",
+        "The headline “THE STAKES START BEFORE THE FIRST SHOT.” is compelling but long at 32px and may become a dense block, especially alongside the large 66px title and subtitle.",
+        "The waveform is described as signaling ducked music and dialogue, but a static waveform alone may not communicate that function. It risks becoming another decorative layer.",
+        "The current narration explains the cutscene’s purpose in generic terms but does not add a specific emotional or mission hook.",
+        "At an estimated 27 words, the narration is safely under 15 seconds, but its cadence is flat and the opening “Before combat” repeats the visual context rather than advancing the story."
+      ],
+      "improvement_suggestions": [
+        "Make the visual hierarchy explicit: title and character faces first, red transmission marker second, map and waveform third. Reduce or dim grid, scanlines, and secondary labels behind the focal content.",
+        "Use a stronger diagonal or horizontal connection: route from Zlisto’s visor toward Lisa’s hologram, then continue as one unbroken line into the sector map. Add a bright endpoint or target marker.",
+        "Keep the red label in the negative space between panels, but shorten it to “ACT 1 / INCOMING” or place “TRANSMISSION” on a separate small strip so it does not cover the route.",
+        "Give Zlisto a recognizable visor notch, shoulder silhouette, or targeting reticle; give Lisa a luminous face profile, crown-like signal geometry, or distinctive holographic framing. Avoid relying on labels alone.",
+        "Treat the headline as a punchline: break it into two lines with “BEFORE THE FIRST SHOT” emphasized, or reduce its size and reserve the strongest contrast for that phrase.",
+        "Animate only three elements: a slow hologram flicker, a traveling pulse along the route, and a waveform responding during narration. Keep the rest static to preserve briefing-screen authority.",
+        "Add a tiny “AUDIO LINK ACTIVE” or “MUSIC DUCKED” label beside the waveform if the audio-state cue is important; otherwise remove the waveform to reduce clutter.",
+        "Revise the voiceover toward a specific dramatic beat and use a short pause after “Princess Lisa” for a clean edit point.",
+        "Check mobile legibility at 1080×1920: preserve generous margins, avoid placing critical text inside the panel seam, and ensure the caption does not compete with the bottom map/waveform cluster."
+      ],
+      "revised_description": "Create a vertical graphic-novel briefing screen with a clean two-panel split. On the left, Agent Zlisto appears as a dark tactical silhouette, defined by a single glowing cyan visor notch and subtle targeting data. On the right, Princess Lisa appears as a magenta-cyan holographic transmission inside three restrained signal rings, with light scan breakup at the edges. Place a compact red badge in the negative space between panels: “ACT 1 / INCOMING.” Run one thin red route line from Zlisto’s visor through the badge and into a bright target point on the sector map below Lisa. Use the headline as the emotional payoff near the bottom: “THE STAKES START / BEFORE THE FIRST SHOT.” Add a small, low-contrast “AUDIO LINK ACTIVE” waveform beneath the map; animate only the hologram flicker, route pulse, and waveform during dialogue. Keep the grid, scanlines, and metadata dim so the faces, route, and headline carry the frame.",
+      "revised_narration": "Before the first shot, Zlisto receives a transmission from Princess Lisa. Her warning turns the mission into something personal—and gives the fight a reason.",
+      "visual_revision_notes": "Prioritize faces, transmission badge, and headline; dim nonessential texture by roughly 30–40%. Connect the route visibly to the map, move the badge into clear negative space, and ensure the map does not compete with the caption. Use a single pulse traveling from visor to target on the narration beat, with a brief hologram glitch on “Princess Lisa.” The revised narration is 25 words, approximately 9–11 seconds spoken, leaving room for a deliberate pause and transition.",
+      "change_summary": "Rebuilt the briefing hierarchy around the two faces and a larger two-line payoff headline. Dimmed the grid and metadata, shortened the badge to “ACT 1 / INCOMING,” and replaced the broken segmented route with one visible visor-to-map line ending in a bright target. Added a more recognizable single visor notch, stronger holographic framing for Lisa, and isolated animation to hologram flicker, route pulse, and dialogue waveform.",
+      "draft_html": "slides/slide_02_draft.html",
+      "final_html": "slides/slide_02.html"
+    },
+    {
+      "slide_id": 3,
+      "title": "Four Sectors. One Ruthless Flight Plan.",
+      "original_description": "Rich HTML/CSS/SVG infographic gameplay slide. Center: a vertical four-sector route map with nodes labeled “SECTOR 01” through “SECTOR 04,” ending in a boss icon. Around it, animate three linked mechanic callouts: “RAM” with an impact-chevron SVG, “AMMO ECONOMY” with segmented ammo cells, and “SELF-DESTRUCT” with a countdown ring. A fourth callout shows “SUPER-LASER CHARGE” as a horizontal charge meter. Add a miniature Canvas-style top-scrolling playfield behind the map: enemy formations, projectiles, player ship, and collectible/charge markers. On-screen headline: “EVERY HIT IS A DECISION.”",
+      "original_narration": "You fly through four sectors using ramming, ammo management, and a strategic self-destruct. Survive long enough to charge the super-laser and face the bosses.",
+      "strengths": [
+        "Strong, distinctive arcade HUD direction with a cohesive cyan/pink/amber/lime palette.",
+        "The miniature combat field gives the slide motion and grounds the abstract mechanics in gameplay.",
+        "The four-sector route, boss endpoint, and mechanic meters create a clear strategic arc.",
+        "HTML/CSS/SVG is well suited to the glowing telemetry, animated route lines, segmented ammo, countdown ring, and charge meter."
+      ],
+      "weaknesses": [
+        "The slide currently asks the viewer to parse too many competing elements at once: large headline, combat window, route map, four callouts, board labels, and background grid.",
+        "The title “Four Sectors. One Ruthless Flight Plan.” and the headline “EVERY HIT IS A DECISION.” overlap conceptually; one should be the primary message and the other a short supporting line.",
+        "The description says the route map is central, but the draft places a large combat panel above it; this may weaken the promised four-sector reading order.",
+        "The three linked mechanic callouts omit a clear visual relationship to the fourth callout, SUPER-LASER CHARGE, making the system feel slightly tacked on.",
+        "The color system is vivid but potentially noisy. Pink, cyan, violet, lime, amber, white, and muted telemetry compete for attention, especially against the dense grid and glow effects.",
+        "The narration is approximately 18–20 seconds at a natural reel pace, exceeding the requested ~15-second limit. It also lists mechanics rather than delivering a sharp strategic payoff.",
+        "The draft’s fixed 1080×1920 layout is appropriate for the reel, but the small 13–24px telemetry labels risk becoming illegible on mobile; key labels need larger type and stronger contrast.",
+        "The truncated CSS suggests extensive animation, but without explicit timing coordination the route progression, combat movement, meters, and countdown could read as decorative motion instead of one guided sequence."
+      ],
+      "improvement_suggestions": [
+        "Establish one visual reading order: headline at top, four-sector route in the middle, mechanics as three compact cards on the right/outer rail, and super-laser charge as the bottom payoff.",
+        "Make “FOUR SECTORS / ONE FLIGHT PLAN” the dominant headline and reduce “EVERY HIT IS A DECISION” to a smaller strategic kicker directly above the mechanic cards.",
+        "Rebalance the board so the route map occupies roughly 55–60% of the main board height. Reduce the combat strip to a narrow animated “LIVE COMBAT FEED” rather than letting it compete with the route.",
+        "Connect each mechanic callout to a specific route node with numbered, color-coded leader lines: 01 RAM, 02 AMMO, 03 SELF-DESTRUCT, 04 SUPER-LASER. This makes the sequence instantly scannable.",
+        "Use a restrained semantic palette: cyan for route/progress, amber for ammo and danger, pink for self-destruct/boss threat, and lime only for charge/readiness. Reserve violet for secondary accents or remove it.",
+        "Animate in a deliberate 12–14 second loop: combat feed flashes, sectors illuminate 01→04, one mechanic meter changes at each node, then the boss icon and super-laser flare. Avoid making every element pulse simultaneously.",
+        "Increase key labels such as SECTOR 01–04 and the four mechanic names to at least approximately 22–26px at the 1080px artboard size; keep telemetry labels small but nonessential.",
+        "Add a compact status line such as “RAM → CONSERVE → DETONATE → CHARGE” to unify the mechanics into one memorable decision chain.",
+        "Keep the boss icon visually quiet until the final beat; its reveal should be the payoff rather than another continuously glowing object.",
+        "Trim decorative copy like “TACTICAL OVERLAY // FERRUM WINGS // LIVE” if it reduces room for readable gameplay information."
+      ],
+      "revised_description": "Vertical 1080×1920 arcade strategy infographic with a clear three-beat hierarchy. Top: the dominant headline “FOUR SECTORS. ONE RUTHLESS FLIGHT PLAN.” and a small kicker, “EVERY HIT IS A DECISION.” Center: a tall, glowing route spine labeled SECTOR 01, 02, 03, and 04, ending at a restrained boss silhouette. Each node activates in sequence and connects to one compact mechanic card: 01 RAM with an impact-chevron, 02 AMMO with three remaining cells, 03 SELF-DESTRUCT with a countdown ring, and 04 SUPER-LASER with a filling charge bar. A narrow animated combat-feed strip sits behind or above the route, showing enemy formations, incoming shots, the player ship, and charge pickups without competing with the route. Use cyan for route progress, amber for ammo/danger, pink for self-destruct and boss threat, and lime only for laser readiness. Animate the route from 01 to 04 over roughly 12–14 seconds, changing one meter at each node, then flash the fully charged super-laser and reveal the boss endpoint. Keep typography and key labels large enough for mobile viewing; minimize secondary telemetry and simultaneous glow effects.",
+      "revised_narration": "Four sectors. Every hit is a choice: ram, conserve ammo, or self-destruct. Charge the super-laser—and reach the boss.",
+      "visual_revision_notes": "Prioritize the route spine over the combat panel. Make the route the largest object, with four evenly spaced nodes and leader lines to four clearly numbered mechanic cards. Compress the combat field into a shallow live-feed band, dim its grid and enemy motion, and reserve the brightest glow for the active node and final super-laser flare. Remove or reduce redundant board telemetry, strengthen mobile-scale typography, and synchronize all animation to the 01→04 progression. The revised narration is about 12 seconds at a measured pace, leaving room for the final boss reveal.",
+      "change_summary": "Rebuilt the slide around a clearer mobile reading order: dominant two-line headline, compact strategic kicker, shallow dimmed combat feed, and a larger four-node route spine. Added numbered color-coded leader lines connecting each sector to its mechanic card, reduced violet and redundant telemetry, clarified the three-remaining ammo state, and moved the super-laser to the lime-only payoff. Synced node activation, meter changes, and quiet-to-bright boss reveal into a restrained 13-second loop.",
+      "draft_html": "slides/slide_03_draft.html",
+      "final_html": "slides/slide_03.html"
+    },
+    {
+      "slide_id": 4,
+      "title": "Juice You Can Hear",
+      "original_description": "Show a split-screen browser game mockup: left is the combat HUD with weapon labels, ammo, boss health, explosions, and screen-shake streaks; right is an audio production diagram. Draw SVG waveform strips labeled “BGM,” “WEAPON SFX,” and “CUTSCENE VOICE,” with the BGM waveform visibly dipping beneath a highlighted voice segment. Overlay small badges: “LOOPING BGM,” “PER-WEAPON SFX,” “DUCKED MUSIC.” Use animated muzzle flashes and hit sparks rendered as CSS/SVG shapes.",
+      "original_narration": "The polish is audiovisual too: looping music, distinct weapon sounds, impact effects, and ducked BGM during cutscenes make the browser prototype feel like a real arcade act.",
+      "strengths": [
+        "The split-screen concept communicates the core idea immediately: combat feedback on the left, audio systems on the right.",
+        "The neon cyan/amber/red palette, HUD typography, scan lines, and SVG/CSS effects are cohesive with an arcade-browser aesthetic.",
+        "The audio diagram includes the most important production concepts—looping music, per-weapon SFX, and voice ducking—rather than presenting generic sound-wave decoration.",
+        "The narration is concise, energetic, and comfortably under 15 seconds at a natural reel pace."
+      ],
+      "weaknesses": [
+        "The visual brief is information-dense: weapon labels, ammo, boss health, explosions, screen shake, three waveforms, three badges, and a split layout may compete at reel scale.",
+        "The right-side waveform section risks reading as a static infographic unless the ducking moment is clearly animated and visually synchronized with the “CUTSCENE VOICE” label.",
+        "The title promises an audible payoff, but the current description does not establish a strong focal sequence showing cause and effect: action happens, sound is triggered, music ducks.",
+        "The narration lists features in a fairly even cadence, while the visual design needs one memorable proof point—ideally the voice waveform rising as BGM visibly drops.",
+        "“Impact effects” is slightly vague compared with the concrete visual language elsewhere; naming hit sparks or muzzle blasts would better connect narration to the screen.",
+        "A two-column split may become cramped on a vertical 9:16 canvas, especially with the current large header, 1120px panel height, and multiple small labels."
+      ],
+      "improvement_suggestions": [
+        "Build the slide around a single visual beat: a muzzle flash/hit spark on the left triggers a bright SFX pulse on the right, then a cutscene voice segment causes the BGM waveform to dip.",
+        "Reduce the combat HUD to three high-value readouts—BOSS HP, AMMO, and one weapon label—and reserve more contrast and whitespace for the audio diagram.",
+        "Make the voice-ducking state unmistakable: use a vertical playhead, highlight the voice segment in amber, dim the BGM waveform to roughly 25–35% amplitude, and add a compact “- duck” annotation.",
+        "Use badges as a numbered progression or small callouts attached to the relevant waveform/interaction instead of three independent floating labels.",
+        "Add a prominent center divider or arrow labeled “GAMEPLAY → MIX” so the split-screen relationship is understood in under a second.",
+        "For the reel, shorten the title or tighten the header footprint; keep the key diagram and combat action inside a safe central area so labels remain legible on mobile.",
+        "Revise the narration to lead with the result, then name only the three strongest mechanisms. End on the arcade-feel payoff rather than stacking too many nouns."
+      ],
+      "revised_description": "Create a vertical split-screen proof of audiovisual juice. On the left, show a simplified neon combat HUD: one labeled weapon, ammo count, boss health bar, a large muzzle flash, and a hit-spark burst with a brief screen-shake streak. On the right, show three aligned SVG waveform lanes labeled “BGM,” “WEAPON SFX,” and “CUTSCENE VOICE.” Animate a playhead from the weapon hit into the SFX lane, then across an amber-highlighted voice segment while the BGM waveform visibly drops to low amplitude. Use three compact callouts—“LOOP,” “PER-WEAPON,” and “DUCK”—anchored to the relevant lanes. Add a subtle GAMEPLAY → MIX connector between panels so the cause-and-effect relationship reads instantly. Keep the palette neon cyan with amber for voice/focus and red for danger; use CSS/SVG effects only, with the audio ducking as the main visual payoff.",
+      "revised_narration": "Every hit has a sound: looping BGM, weapon-specific SFX, and music that ducks for voice. That’s what makes this browser prototype feel arcade-real.",
+      "visual_revision_notes": "Prioritize the waveform ducking animation over decorative scan effects. Use a clear three-beat timing: 0–2s combat muzzle flash, 2–4s SFX pulse/playhead, 4–7s voice highlight with BGM amplitude dropping. Keep labels at high contrast and avoid placing small badges near the outer edges. The current CSS direction is strong, but the two 1fr panels and large header should be tested at 540px minimum width; if labels become cramped, reduce panel padding and waveform annotation count before shrinking type.",
+      "change_summary": "Rebuilt the slide around a clearer three-beat cause-and-effect sequence: the left combat hit leads through a prominent GAMEPLAY → MIX connector into an animated SFX pulse and then an amber voice segment that visibly reduces the BGM waveform. Simplified the HUD to BOSS HP, AMMO, and one weapon label; replaced floating badges with numbered lane-linked callouts; tightened the header and added a compact responsive layout for narrower screens; removed the remote font dependency and kept all visuals CSS/SVG-only.",
+      "draft_html": "slides/slide_04_draft.html",
+      "final_html": "slides/slide_04.html"
+    },
+    {
+      "slide_id": 5,
+      "title": "From One Brief to a Playable Reel",
+      "original_description": "End on a clean CTA poster framed like a browser launch screen. Large central button: “PLAY ACT 1 IN BROWSER.” Beneath it: “No install” and “Public link + README.” A side pipeline diagram connects proposal → reel_agent.py → structured slides → tts-1-hd narration → ai_grading/ artifacts → reel.mp4. Add a small completion checklist: “Playable URL,” “30–60s MP4,” “Mechanics + narrative,” “Generative pipeline.” Footer: “Capital Syndicate — Operation Ferrum Wings / Poom Rangsi.”",
+      "original_narration": "One proposal powers the playable demo and the production pipeline: structured slides, critique, TTS, and a finished reel. Click through, play Act 1, and see the full system in motion.",
+      "strengths": [
+        "The browser-window frame makes the CTA feel tangible and reinforces the promise of a playable artifact.",
+        "The neon cyan/lime launch button has strong contrast, a clear action, and portfolio-demo energy.",
+        "The end-to-end pipeline communicates that this is more than a mockup: it moves from brief to slides, narration, grading artifacts, and MP4.",
+        "The checklist gives the audience concrete proof of completion rather than ending on a vague claim.",
+        "The narration is concise enough for a reel and lands on an action-oriented invitation."
+      ],
+      "weaknesses": [
+        "The slide is trying to serve three jobs at once—CTA, technical pipeline, and proof checklist—so the browser mockup may compete with the actual call to action.",
+        "The title “From One Brief to a Playable Reel” and the browser’s “ACT 1” treatment are both large headline moments; the hierarchy should make the launch button the unmistakable focal point.",
+        "“Public link + README” is useful but visually secondary; the audience may not immediately understand whether the button is clickable in the final reel or simply a representation of the deliverable.",
+        "The pipeline labels are technically precise but dense, especially “tts-1-hd narration” and “ai_grading/ artifacts.” At reel scale, these may become unreadable and feel like implementation notes rather than proof.",
+        "The checklist repeats some of the pipeline’s message. Without grouping, the lower half risks becoming a wall of small badges and arrows.",
+        "The current narration says “Click through” even though the viewer may be watching a video, not interacting with a live page. That creates a slight mismatch between spoken promise and viewing context.",
+        "The supplied HTML is truncated, so the lower pipeline/checklist layout cannot be verified; the design should explicitly reserve space and avoid relying on tiny type below the browser."
+      ],
+      "improvement_suggestions": [
+        "Make the launch button the primary message: shorten the browser CTA to “PLAY ACT 1” and place “IN BROWSER” as a smaller supporting label, or keep the full phrase but reduce competing headline scale.",
+        "Use a clear two-zone layout: browser/CTA in the upper two-thirds, then a compact “ONE BRIEF → ONE PLAYABLE SYSTEM” pipeline strip and four proof chips in the lower third.",
+        "Reduce the pipeline to six readable stages: Brief → Agent → Slides → Voice → Grade → Reel. Put filenames such as reel_agent.py, tts-1-hd, and reel.mp4 in smaller monospace metadata beneath the primary labels.",
+        "Treat the checklist as proof chips with icons or checkmarks, not a second diagram. Keep each item to one line and use consistent wording: “Playable URL,” “30–60s MP4,” “Mechanics + story,” “Generative pipeline.”",
+        "Add a small status label near the browser CTA, such as “LIVE DEMO / ACT 1 READY,” to clarify that the button represents a real destination.",
+        "Reserve adequate bottom padding and test the slide at mobile/reel viewing size; any text below roughly 18–20px should be considered metadata, not essential information.",
+        "Visually connect the final pipeline node to the browser button with one bright accent path so the audience reads the logic as a transformation, not two unrelated panels.",
+        "End the footer more quietly. Keep “Capital Syndicate — Operation Ferrum Wings / Poom Rangsi” as a small signature so it does not compete with the CTA."
+      ],
+      "revised_description": "Close with a high-contrast browser launch screen. Make “PLAY ACT 1 IN BROWSER” the dominant focal point, supported by a compact “LIVE DEMO / ACT 1 READY” status label and the promise “No install · Public link + README.” Beneath the browser, show one readable pipeline strip: Brief → Agent → Slides → Voice → Grade → Reel, with small metadata labels for reel_agent.py, tts-1-hd, ai_grading/, and reel.mp4. Finish with four compact proof chips: “Playable URL,” “30–60s MP4,” “Mechanics + story,” and “Generative pipeline.” Keep the footer as a restrained signature: “Capital Syndicate — Operation Ferrum Wings / Poom Rangsi.” Use the neon cyan/lime button as the brightest element, cyan connector lines for the pipeline, and pink only for the title accent.",
+      "revised_narration": "One brief becomes a playable Act 1—slides, voice, grading, and a finished reel. Open the public link and watch the full pipeline run.",
+      "visual_revision_notes": "Preserve the dark grid, browser chrome, and cyan/lime/pink palette, but simplify the hierarchy. Scale the title down slightly, enlarge the CTA’s surrounding breathing room, and ensure the launch button is the brightest, highest-contrast object. Add a small “LIVE DEMO / ACT 1 READY” badge above it. Place the pipeline in a single horizontal or gently stepped strip below the browser; use large stage names and tiny technical filenames only as secondary labels. Convert the completion checklist into four evenly sized chips with check icons. Use a bright connector from “Reel” back to the browser CTA to make the final output feel actionable. Keep all essential copy at reel-readable size and avoid letting the ship illustration or footer compete with the button.",
+      "change_summary": "Rebuilt the slide around a two-zone hierarchy: a quieter title and browser launch panel occupy the upper section, with the neon “PLAY ACT 1” CTA as the brightest focal point and “IN BROWSER” as supporting text. Replaced the dense diagram with six readable pipeline stages and compact monospace metadata, added a bright Reel-to-CTA connector, converted the checklist into four consistent proof chips, removed remote font loading, and quieted the footer.",
+      "draft_html": "slides/slide_05_draft.html",
+      "final_html": "slides/slide_05.html"
+    }
+  ]
+}

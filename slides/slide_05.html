@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, initial-scale=1.0" />
+<title>Capital Syndicate — Act 1 Ready</title>
+<style>
+  :root{--bg:#060817;--panel:#0d1229;--cyan:#4ff5ff;--pink:#ff4fb3;--lime:#baff68;--white:#f4f8ff;--muted:#9da8c6;--line:#2b3c70}
+  *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg)}
+  body{font-family:Arial,'Helvetica Neue',sans-serif;color:var(--white)}
+  .canvas{position:relative;width:1080px;height:1920px;overflow:hidden;background:radial-gradient(ellipse at 50% 33%,rgba(37,42,112,.62),transparent 48%),radial-gradient(ellipse at 10% 82%,rgba(0,205,255,.12),transparent 34%),linear-gradient(155deg,#07091b 0%,#090b21 56%,#110719 100%)}
+  .canvas:before{content:"";position:absolute;inset:0;opacity:.2;background-image:linear-gradient(rgba(89,117,191,.17) 1px,transparent 1px),linear-gradient(90deg,rgba(89,117,191,.17) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,transparent,black 14%,black 88%,transparent)}
+  .stars{position:absolute;inset:0;opacity:.75;background-image:radial-gradient(circle at 9% 17%,#fff 0 2px,transparent 3px),radial-gradient(circle at 80% 9%,var(--cyan) 0 2px,transparent 3px),radial-gradient(circle at 93% 40%,var(--pink) 0 2px,transparent 3px),radial-gradient(circle at 18% 53%,#fff 0 1px,transparent 2px),radial-gradient(circle at 74% 72%,#fff 0 1px,transparent 2px),radial-gradient(circle at 48% 92%,var(--cyan) 0 2px,transparent 3px)}
+  .top{position:absolute;left:82px;right:82px;top:70px;display:flex;justify-content:space-between;align-items:center}.eyebrow,.slide,.mono{font-family:'Courier New',monospace}.eyebrow{font-size:20px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase}.slide{font-size:18px;letter-spacing:2px;color:#7180a8}
+  .hero{position:absolute;left:82px;top:132px;width:900px}.hero h1{margin:0;max-width:800px;font-size:78px;line-height:.9;letter-spacing:-2px;text-transform:uppercase}.hero h1 span{color:var(--pink);text-shadow:0 0 22px rgba(255,79,179,.35)}.sub{margin:22px 0 0;max-width:700px;color:#b9c6e5;font:19px/1.45 'Courier New',monospace}
+  .browser{position:absolute;left:82px;top:350px;width:916px;height:690px;border:2px solid rgba(109,144,223,.65);border-radius:24px;background:rgba(9,13,32,.95);box-shadow:0 0 0 8px rgba(49,65,123,.14),0 28px 80px rgba(0,0,0,.5),0 0 60px rgba(79,245,255,.12);overflow:hidden}.browserbar{height:64px;display:flex;align-items:center;gap:12px;padding:0 22px;background:linear-gradient(90deg,#131b3c,#10152e);border-bottom:1px solid #283463}.dot{width:13px;height:13px;border-radius:50%;background:#ff5a9d;box-shadow:23px 0 #ffce62,46px 0 #58f5c1}.address{margin-left:28px;width:475px;height:31px;border:1px solid #334477;border-radius:8px;padding:7px 16px;color:#8190b9;font:13px 'Courier New',monospace}.window-label{margin-left:auto;color:#7585b2;font:12px 'Courier New',monospace}
+  .browser-main{position:relative;height:626px;padding:62px 62px;background:radial-gradient(circle at 52% 47%,rgba(60,25,107,.56),transparent 57%),linear-gradient(135deg,#0b1230,#14091f)}.browser-main:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(79,245,255,.08) 50%,transparent 70%);transform:skewX(-20deg)}
+  .status{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid rgba(186,255,104,.65);border-radius:5px;color:var(--lime);background:rgba(186,255,104,.08);font:700 16px 'Courier New',monospace;letter-spacing:2px}.status:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+  .act-title{position:relative;z-index:1;margin:30px 0 0;font-size:84px;line-height:.86;letter-spacing:-2px;text-transform:uppercase}.act-title em{color:var(--cyan);font-style:normal}.mission{position:relative;z-index:1;margin-top:22px;color:#aab6d8;font:17px 'Courier New',monospace;letter-spacing:1px}
+  .launch{position:relative;z-index:2;margin-top:48px;display:flex;align-items:center;justify-content:center;width:664px;height:108px;border:0;border-radius:10px;color:#06101c;background:linear-gradient(100deg,#9dff62,#4ff5ff);font-weight:900;font-size:47px;letter-spacing:1px;box-shadow:0 0 0 5px rgba(79,245,255,.18),0 0 42px rgba(79,245,255,.55)}.launch:before{content:'▶';margin-right:18px;font-size:31px}.launch small{align-self:flex-end;margin:0 0 18px 15px;font:700 16px 'Courier New',monospace;letter-spacing:2px}
+  .promise{position:relative;z-index:1;margin-top:27px;color:#e7edff;font:700 19px 'Courier New',monospace}.promise b{color:var(--lime)}.promise span{color:#6e7caa;margin:0 12px}
+  .ship{position:absolute;right:78px;bottom:35px;width:190px;height:180px;opacity:.7}.ship:before{content:"";position:absolute;left:64px;top:15px;width:62px;height:125px;background:linear-gradient(90deg,#6d73bd,#e7f8ff 48%,#8061d9);clip-path:polygon(50% 0,78% 42%,100% 100%,50% 78%,0 100%,22% 42%);filter:drop-shadow(0 0 11px var(--cyan))}.ship:after{content:"";position:absolute;left:72px;top:104px;width:48px;height:75px;background:linear-gradient(var(--pink),transparent);clip-path:polygon(50% 100%,0 0,100% 0);filter:blur(4px)}
+  .pipeline-wrap{position:absolute;left:82px;top:1092px;width:916px}.section-label{color:var(--cyan);font:700 19px 'Courier New',monospace;letter-spacing:2px;text-transform:uppercase}.section-label strong{color:var(--pink);font-weight:700}.pipeline{position:relative;display:flex;justify-content:space-between;margin-top:27px;padding:0 8px}.pipeline:before{content:"";position:absolute;left:55px;right:55px;top:24px;height:2px;background:var(--cyan);box-shadow:0 0 12px rgba(79,245,255,.75)}.pipe{position:relative;z-index:1;width:125px;text-align:center}.node{width:50px;height:50px;margin:0 auto;border:2px solid var(--cyan);border-radius:50%;display:grid;place-items:center;background:#0b1230;color:var(--cyan);font:700 15px 'Courier New',monospace;box-shadow:0 0 17px rgba(79,245,255,.25)}.pipe:nth-child(2) .node,.pipe:nth-child(5) .node{border-color:var(--pink);color:var(--pink)}.pipe:nth-child(4) .node{border-color:var(--lime);color:var(--lime)}.stage{margin-top:15px;color:#f1f5ff;font:700 21px 'Courier New',monospace}.meta{margin-top:8px;color:#8491b5;font:14px/1.2 'Courier New',monospace;white-space:nowrap}.pipe:last-child:after{content:"";position:absolute;left:64px;top:25px;width:250px;height:2px;background:linear-gradient(90deg,var(--lime),var(--cyan),transparent);transform:rotate(28deg);transform-origin:left center;z-index:-1;filter:drop-shadow(0 0 7px var(--cyan))}
+  .proof{position:absolute;left:82px;top:1318px;width:916px}.proof-title{color:#cbd5f2;font:700 17px 'Courier New',monospace;letter-spacing:2px;text-transform:uppercase}.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:22px}.chip{height:78px;display:flex;align-items:center;gap:12px;padding:0 15px;border:1px solid #3a4a79;border-radius:12px;background:rgba(18,25,55,.82);color:#f2f6ff;font-size:20px;font-weight:700;white-space:nowrap}.check{width:25px;height:25px;flex:none;display:grid;place-items:center;border:1px solid var(--lime);border-radius:50%;color:var(--lime);font-size:16px}
+  .footer{position:absolute;left:82px;right:82px;bottom:60px;padding-top:18px;border-top:1px solid #27345e;color:#8490b0;font:14px 'Courier New',monospace}.footer strong{color:#c7d2f3;font-weight:400}.footer span{float:right;color:#617096}
+</style>
+</head>
+<body>
+<main class="canvas">
+  <div class="stars"></div>
+  <header class="top"><div class="eyebrow">Capital Syndicate / Act 1</div><div class="slide">05 — FINAL TRANSMISSION</div></header>
+  <section class="hero"><h1>One Brief.<br><span>One Playable</span><br>System.</h1><p class="sub">A browser launch, a structured story, and a finished social artifact.</p></section>
+  <section class="browser" aria-label="Browser launch screen">
+    <div class="browserbar"><div class="dot"></div><div class="address">capital-syndicate.local / act-1</div><div class="window-label">SECURE LINK · ONLINE</div></div>
+    <div class="browser-main">
+      <div class="status">LIVE DEMO / ACT 1 READY</div>
+      <div class="act-title">Capital<br><em>Syndicate</em></div>
+      <div class="mission">ACT 1 · BREAK THE CHROMIUM LINE</div>
+      <div class="launch">PLAY ACT 1 <small>IN BROWSER</small></div>
+      <div class="promise"><b>✓</b> No install <span>·</span> <b>✓</b> Public link + README</div>
+      <div class="ship"></div>
+    </div>
+  </section>
+  <section class="pipeline-wrap" aria-label="Production pipeline">
+    <div class="section-label">ONE BRIEF <strong>→</strong> ONE PLAYABLE SYSTEM</div>
+    <div class="pipeline">
+      <div class="pipe"><div class="node">01</div><div class="stage">Brief</div><div class="meta">proposal</div></div>
+      <div class="pipe"><div class="node">02</div><div class="stage">Agent</div><div class="meta">reel_agent.py</div></div>
+      <div class="pipe"><div class="node">03</div><div class="stage">Slides</div><div class="meta">structured HTML</div></div>
+      <div class="pipe"><div class="node">04</div><div class="stage">Voice</div><div class="meta">tts-1-hd</div></div>
+      <div class="pipe"><div class="node">05</div><div class="stage">Grade</div><div class="meta">ai_grading/</div></div>
+      <div class="pipe"><div class="node">06</div><div class="stage">Reel</div><div class="meta">reel.mp4</div></div>
+    </div>
+  </section>
+  <section class="proof" aria-label="Proof points"><div class="proof-title">DELIVERED / VERIFIED</div><div class="chips"><div class="chip"><span class="check">✓</span>Playable URL</div><div class="chip"><span class="check">✓</span>30–60s MP4</div><div class="chip"><span class="check">✓</span>Mechanics + story</div><div class="chip"><span class="check">✓</span>Generative pipeline</div></div></section>
+  <footer class="footer"><strong>Capital Syndicate — Operation Ferrum Wings / Poom Rangsi</strong><span>END OF ACT 1</span></footer>
+</main>
+</body>
+</html>

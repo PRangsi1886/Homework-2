@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Operation Ferrum Wings — Briefing</title>
+<style>
+  :root{
+    --bg:#070914;
+    --panel:#101426;
+    --cyan:#5ff3ff;
+    --cyan2:#1ebed1;
+    --magenta:#ea4fff;
+    --red:#ff4056;
+    --white:#edf6ff;
+    --muted:#8190aa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg)}
+  body{font-family:Arial,Helvetica,sans-serif;color:var(--white)}
+  .slide{position:relative;width:1080px;height:1920px;overflow:hidden;background:
+    radial-gradient(ellipse at 16% 10%,rgba(45,78,128,.25),transparent 34%),
+    radial-gradient(ellipse at 88% 75%,rgba(138,22,132,.16),transparent 35%),
+    linear-gradient(145deg,#080a17 0%,#060711 52%,#0a0717 100%)}
+  .slide:before{content:"";position:absolute;inset:0;opacity:.17;background-image:linear-gradient(rgba(95,243,255,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(95,243,255,.13) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+  .slide:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 7px,rgba(255,255,255,.018) 8px 9px);mix-blend-mode:screen}
+  .header{position:absolute;top:74px;left:74px;right:74px;display:flex;justify-content:space-between;align-items:flex-start;z-index:5}
+  .eyebrow{font-size:23px;letter-spacing:5px;color:var(--cyan);font-weight:700}
+  .code{font:700 20px monospace;color:#5d6780;letter-spacing:2px}
+  h1{position:absolute;z-index:5;top:145px;left:70px;margin:0;width:940px;font-size:66px;line-height:.98;letter-spacing:-2px;text-transform:uppercase;font-weight:900}
+  h1 span{color:var(--cyan);text-shadow:0 0 18px rgba(95,243,255,.35)}
+  .sub{position:absolute;top:292px;left:74px;color:var(--muted);font-size:22px;letter-spacing:2px;text-transform:uppercase}
+  .visual{position:absolute;left:56px;top:380px;width:968px;height:1110px;border:1px solid rgba(95,243,255,.3);background:rgba(9,13,29,.68);box-shadow:0 0 50px rgba(25,155,190,.12),inset 0 0 70px rgba(38,33,95,.25);z-index:2}
+  .visual .corner{position:absolute;width:30px;height:30px;border-color:var(--cyan);border-style:solid;opacity:.8}
+  .corner.tl{left:-1px;top:-1px;border-width:3px 0 0 3px}.corner.tr{right:-1px;top:-1px;border-width:3px 3px 0 0}.corner.bl{left:-1px;bottom:-1px;border-width:0 0 3px 3px}.corner.br{right:-1px;bottom:-1px;border-width:0 3px 3px 0}
+  .panel{position:absolute;top:52px;height:780px;border:1px solid rgba(117,143,184,.35);overflow:hidden;background:linear-gradient(160deg,rgba(31,44,76,.55),rgba(9,11,25,.83))}
+  .leftPanel{left:40px;width:425px}.rightPanel{right:40px;width:425px;background:linear-gradient(160deg,rgba(26,13,55,.73),rgba(7,17,30,.86))}
+  .panelTitle{position:absolute;top:22px;left:24px;z-index:4;font:700 18px monospace;letter-spacing:2px;color:#9baac4}.panelTitle b{color:var(--cyan)}
+  .panelTag{position:absolute;bottom:25px;left:25px;z-index:5;font-size:19px;letter-spacing:3px;color:var(--white);font-weight:700}.panelTag small{display:block;color:var(--cyan);font:700 15px monospace;margin-top:8px;letter-spacing:2px}
+  svg{width:100%;height:100%;display:block}
+  .redLabel{position:absolute;z-index:8;top:390px;left:366px;width:236px;height:105px;background:var(--red);clip-path:polygon(10% 0,100% 0,100% 78%,90% 100%,0 100%,0 22%);padding:18px 13px;text-align:center;color:#fff;box-shadow:0 0 24px rgba(255,64,86,.4);font-weight:900;line-height:1.08;font-size:20px;letter-spacing:1px}
+  .redLabel small{display:block;margin-top:7px;font-size:14px;letter-spacing:2px;font-family:monospace}
+  .route{position:absolute;z-index:6;top:492px;left:473px;width:360px;height:155px;overflow:visible}
+  .route path{fill:none;stroke:var(--red);stroke-width:3;stroke-dasharray:9 10;filter:drop-shadow(0 0 5px rgba(255,64,86,.8))}
+  .route circle{fill:var(--cyan);stroke:#fff;stroke-width:2;filter:drop-shadow(0 0 8px var(--cyan))}
+  .map{position:absolute;right:56px;bottom:66px;width:355px;height:150px;border:1px solid rgba(95,243,255,.27);background:rgba(5,12,24,.65);padding:15px 18px;color:var(--muted);font:13px monospace;letter-spacing:1px}
+  .map svg{position:absolute;inset:34px 15px 10px;width:325px;height:90px}
+  .mapTitle{position:relative;z-index:2;color:var(--cyan)}
+  .wave{position:absolute;left:72px;bottom:52px;width:390px;height:80px;border-top:1px solid rgba(95,243,255,.23);border-bottom:1px solid rgba(95,243,255,.16);opacity:.8}
+  .waveLabel{position:absolute;left:0;top:-28px;color:var(--muted);font:13px monospace;letter-spacing:2px}
+  .wave svg{height:78px}
+  .wave polyline{fill:none;stroke:var(--cyan);stroke-width:2;filter:drop-shadow(0 0 4px var(--cyan))}
+  .caption{position:absolute;left:72px;right:72px;bottom:214px;z-index:6;padding-left:24px;border-left:4px solid var(--magenta);font-size:32px;line-height:1.12;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .caption em{font-style:normal;color:var(--magenta)}
+  .footer{position:absolute;left:74px;right:74px;bottom:77px;display:flex;justify-content:space-between;align-items:center;color:#66758f;font:700 16px monospace;letter-spacing:2px;z-index:5}
+  .footer .live{color:var(--cyan)}
+</style>
+</head>
+<body>
+<main class="slide">
+  <div class="header"><div class="eyebrow">CAPITAL SYNDICATE // ACT 1</div><div class="code">BRIEFING_02 / 04</div></div>
+  <h1>Briefing: <span>Agent Zlisto</span><br/>Princess Lisa</h1>
+  <div class="sub">SECURE CHANNEL // PRE-COMBAT CUTSCENE // AUDIO DUCK ACTIVE</div>
+
+  <section class="visual" aria-label="Graphic novel briefing: agent portrait and holographic princess transmission">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div class="panel leftPanel">
+      <div class="panelTitle"><b>01</b> / FIELD AGENT</div>
+      <svg viewBox="0 0 425 780" aria-hidden="true">
+        <defs>
+          <linearGradient id="suit" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#243a57"/><stop offset="1" stop-color="#090d1c"/></linearGradient>
+          <linearGradient id="visor" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#50edff" stop-opacity=".15"/><stop offset=".5" stop-color="#bafaff" stop-opacity=".9"/><stop offset="1" stop-color="#ea4fff" stop-opacity=".4"/></linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <path d="M0 135H425M0 154H425M0 608H425M0 627H425" stroke="#5ff3ff" opacity=".1"/>
+        <circle cx="213" cy="350" r="171" fill="none" stroke="#5ff3ff" opacity=".16" stroke-width="2" stroke-dasharray="4 12"/>
+        <path d="M84 780C91 635 128 554 167 531L213 565 258 531C307 558 337 637 344 780Z" fill="url(#suit)" stroke="#436786" stroke-width="3"/>
+        <path d="M141 280C145 190 176 144 213 144C254 144 286 190 286 280L270 405C255 454 231 480 213 480C192 480 168 453 153 405Z" fill="#111a2c" stroke="#7c9cb9" stroke-width="3"/>
+        <path d="M145 279Q213 236 282 279L270 351Q211 382 154 351Z" fill="#07111e" stroke="#5ff3ff" stroke-width="5"/>
+        <path d="M160 287Q211 266 271 286L263 320Q215 335 166 319Z" fill="url(#visor)" filter="url(#glow)"/>
+        <path d="M174 291L198 279M224 277L254 290" stroke="#fff" stroke-width="4" opacity=".9"/>
+        <path d="M120 540L169 501 213 544 257 501 307 540 277 601 213 584 151 601Z" fill="#1c2e4a" stroke="#5ff3ff" stroke-width="2"/>
+        <path d="M213 545V780M93 703L152 643M333 703L274 643" stroke="#5ff3ff" opacity=".35" stroke-width="2"/>
+        <path d="M160 505L139 438M266 505L287 438" stroke="#ea4fff" opacity=".65" stroke-width="5"/>
+        <circle cx="92" cy="701" r="7" fill="#ea4fff"/><circle cx="333" cy="701" r="7" fill="#5ff3ff"/>
+        <text x="28" y="110" fill="#5ff3ff" font-family="monospace" font-size="13" letter-spacing="2">SIGNAL: LOCKED</text>
+      </svg>
+      <div class="panelTag">AGENT ZLISTO<small>CALLSIGN // FERRUM-01</small></div>
+    </div>
+
+    <div class="panel rightPanel">
+      <div class="panelTitle"><b>02</b> / HOLOGRAPHIC RELAY</div>
+      <svg viewBox="0 0 425 780" aria-hidden="true">
+        <defs>
+          <radialGradient id="holo"><stop stop-color="#bffcff" stop-opacity=".45"/><stop offset=".45" stop-color="#35ddf0" stop-opacity=".13"/><stop offset="1" stop-color="#ea4fff" stop-opacity="0"/></radialGradient>
+          <filter id="hglow"><feGaussianBlur stdDeviation="4" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <ellipse cx="212" cy="377" rx="177" ry="250" fill="url(#holo)"/>
+        <g fill="none" stroke="#5ff3ff" opacity=".7">
+          <ellipse cx="212" cy="377" rx="168" ry="241" stroke-width="2" stroke-dasharray="5 14"/>
+          <ellipse cx="212" cy="377" rx="143" ry="216" stroke-width="2"/>
+          <ellipse cx="212" cy="377" rx="188" ry="59" transform="rotate(-24 212 377)" stroke-width="3"/>
+          <ellipse cx="212" cy="377" rx="188" ry="59" transform="rotate(24 212 377)" stroke="#ea4fff" stroke-width="2"/>
+        </g>
+        <g stroke="#5ff3ff" opacity=".18"><path d="M45 377H380M212 130V650"/><path d="M83 218L341 536M341 218L83 536"/></g>
+        <path d="M116 650C119 568 150 515 174 494L212 519 250 494C277 520 304 573 308 650Z" fill="#3de0ed" opacity=".16" stroke="#8dffff" stroke-width="3"/>
+        <path d="M159 290C164 215 181 180 212 180C244 180 261 215 266 290L255 402C246 443 226 469 212 469C196 469 179 444 169 402Z" fill="#63eefa" opacity=".13" stroke="#9cffff" stroke-width="3"/>
+        <path d="M161 286Q211 256 265 286L256 344Q212 363 169 344Z" fill="#071b2d" stroke="#c4ffff" stroke-width="4" filter="url(#hglow)"/>
+        <path d="M177 295L204 282M222 282L249 295" stroke="#fff" stroke-width="4"/>
+        <path d="M132 405Q212 430 292 405M144 435Q212 457 280 435" fill="none" stroke="#5ff3ff" stroke-width="3" opacity=".8"/>
+        <g stroke="#ea4fff" opacity=".45"><path d="M111 242h27M287 242h27M111 515h27M287 515h27" stroke-width="5"/><path d="M102 260h18M305 260h18M102 497h18M305 497h18"/></g>
+        <text x="28" y="110" fill="#ea4fff" font-family="monospace" font-size="13" letter-spacing="2">TRANSMISSION: LIVE</text>
+        <text x="286" y="110" fill="#5ff3ff" font-family="monospace" font-size="13" letter-spacing="1">07:42</text>
+      </svg>
+      <div class="panelTag">PRINCESS LISA<small>ROYAL RELAY // PRIORITY OMEGA</small></div>
+    </div>
+
+    <div class="redLabel">ACT 1<small>// INCOMING<br/>TRANSMISSION</small></div>
+    <svg class="route" viewBox="0 0 360 155" aria-hidden="true"><path d="M4 18C65 10 80 100 148 90S233 26 351 137"/><circle cx="5" cy="18" r="6"/><circle cx="351" cy="137" r="7"/></svg>
+    <div class="map"><div class="mapTitle">ROUTE // SECTOR MAP</div><svg viewBox="0 0 325 90" aria-hidden="true"><path d="M20 70L90 44 158 62 218 22 300 38" fill="none" stroke="#5ff3ff" stroke-width="2" stroke-dasharray="5 7"/><circle cx="20" cy="70" r="5" fill="#ff4056"/><circle cx="90" cy="44" r="4" fill="#5ff3ff"/><circle cx="158" cy="62" r="4" fill="#5ff3ff"/><circle cx="218" cy="22" r="4" fill="#ea4fff"/><circle cx="300" cy="38" r="6" fill="#ff4056"/><text x="8" y="87" fill="#8190aa" font-size="10">DOCK</text><text x="272" y="24" fill="#ff4056" font-size="10">FERRUM</text></svg></div>
+    <div class="wave"><div class="waveLabel">DIALOGUE CHANNEL // MUSIC DUCKED</div><svg viewBox="0 0 390 78" preserveAspectRatio="none"><polyline points="0,42 18,42 27,35 34,49 42,42 59,42 67,18 74,66 82,42 103,42 110,31 119,53 127,42 148,42 157,10 166,72 175,42 197,42 205,27 214,57 223,42 246,42 256,36 263,48 272,42 292,42 302,20 310,64 319,42 339,42 348,30 359,54 368,42 390,42"/></svg></div>
+  </section>
+
+  <div class="caption">The stakes start <em>before</em> the first shot.</div>
+  <div class="footer"><span class="live">● CUTSCENE / STORY HOOK</span><span>OPERATION FERRUM WINGS</span><span>02 — 04</span></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Capital Syndicate — Operation Ferrum Wings</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+  :root{--navy:#050913;--ink:#02040a;--cyan:#55f5ff;--red:#ff3b24;--orange:#ff8b38;--chrome:#cbd4d8;--muted:#7e8b9b;}
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}
+  body{font-family:'Barlow Condensed',Impact,sans-serif;color:#fff;display:flex;align-items:center;justify-content:center}
+  .reel{position:relative;width:min(100vw,56.25vh);height:min(177.7778vw,100vh);aspect-ratio:9/16;overflow:hidden;background:var(--navy);isolation:isolate}
+  .space{position:absolute;inset:0;background:radial-gradient(ellipse at 49% 42%,#172637 0%,#07101b 31%,#03060d 72%,#010206 100%)}
+  .space:before{content:"";position:absolute;inset:0;opacity:.6;background-image:radial-gradient(circle at 9% 14%,#fff 0 1px,transparent 1.6px),radial-gradient(circle at 82% 18%,#83e9ef 0 1px,transparent 1.7px),radial-gradient(circle at 22% 61%,#fff 0 1px,transparent 1.6px),radial-gradient(circle at 90% 66%,#fff 0 1px,transparent 1.7px),radial-gradient(circle at 70% 88%,#89d7e0 0 1px,transparent 1.4px);background-size:280px 330px,370px 420px,310px 270px,420px 350px,260px 300px;animation:drift 12s linear infinite}
+  @keyframes drift{to{transform:translateY(35px)}}
+  .vignette{position:absolute;inset:0;z-index:5;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.7),transparent 22%,transparent 78%,rgba(0,0,0,.7)),linear-gradient(0deg,rgba(0,0,0,.82),transparent 24%,transparent 77%,rgba(0,0,0,.65))}
+  .scan{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.22;background:repeating-linear-gradient(0deg,transparent 0 8px,rgba(91,240,255,.11) 9px,transparent 10px);mix-blend-mode:screen;animation:scan 5s linear infinite}
+  @keyframes scan{from{transform:translateY(-20px)}to{transform:translateY(20px)}}
+  .warning-grid{position:absolute;left:-15%;right:-15%;bottom:210px;height:620px;opacity:.34;transform:perspective(360px) rotateX(57deg) rotateZ(-6deg);transform-origin:bottom center;background-image:linear-gradient(rgba(255,60,32,.85) 2px,transparent 2px),linear-gradient(90deg,rgba(255,60,32,.85) 2px,transparent 2px);background-size:64px 64px;mask-image:linear-gradient(to top,black,transparent 92%);animation:gridpulse 2.6s ease-in-out infinite}
+  @keyframes gridpulse{50%{opacity:.16;filter:drop-shadow(0 0 14px var(--red))}}
+  .topline{position:absolute;top:58px;left:68px;right:68px;z-index:8;display:flex;align-items:center;justify-content:space-between;font:700 16px 'Space Mono',monospace;letter-spacing:2px;color:var(--cyan)}
+  .topline .mark{display:flex;align-items:center;gap:10px}.dot{width:8px;height:8px;background:var(--red);border-radius:50%;box-shadow:0 0 15px var(--red);animation:blink 1.2s infinite}@keyframes blink{50%{opacity:.25}}
+  .topline .status{color:#f1f5f5;font-size:13px}.status b{color:var(--red)}
+  .title{position:absolute;z-index:8;top:134px;left:66px;right:54px;text-align:left}
+  .eyebrow{font:700 18px 'Space Mono',monospace;letter-spacing:5px;color:var(--red);text-shadow:0 0 16px rgba(255,59,36,.6);margin-bottom:16px}.eyebrow:before{content:'// ';color:var(--cyan)}
+  h1{font-size:76px;line-height:.83;letter-spacing:1px;margin:0;text-transform:uppercase;font-weight:900;text-shadow:4px 5px 0 #26313a,0 0 26px rgba(82,245,255,.13)}
+  h1 span{display:block;color:var(--chrome);font-size:52px;letter-spacing:5px;margin-top:13px;text-shadow:2px 3px 0 #4c5a62,0 0 20px rgba(255,255,255,.18)}
+  .subtitle{font-size:27px;line-height:1.05;color:#d6e4e6;max-width:740px;margin-top:27px;letter-spacing:.4px}.subtitle em{font-style:normal;color:var(--cyan)}
+  .browser{position:absolute;z-index:4;left:90px;right:90px;top:545px;height:675px;border:2px solid rgba(98,226,236,.65);border-radius:11px;background:rgba(5,12,20,.52);box-shadow:0 0 0 7px rgba(4,11,18,.72),0 0 42px rgba(0,229,255,.2),inset 0 0 35px rgba(0,0,0,.7);transform:rotate(-1.4deg)}
+  .browser:after{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 20%,transparent 70%,rgba(255,54,35,.11));pointer-events:none}
+  .bar{height:43px;border-bottom:1px solid rgba(118,224,232,.42);display:flex;align-items:center;padding:0 16px;gap:8px;background:rgba(17,27,36,.9)}.bar i{display:block;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:20px 0 #ffb02e,40px 0 #50e88c}.url{margin-left:50px;color:#78909c;font:11px 'Space Mono',monospace;border:1px solid #334750;border-radius:4px;padding:7px 14px;flex:1}.screen{position:absolute;top:43px;bottom:0;left:0;right:0;overflow:hidden;background:radial-gradient(circle at 50% 44%,#26404a,#0b1720 31%,#040a12 72%)}
+  .screen:before{content:"SECTOR 01  /  FERRUM RING";position:absolute;top:22px;left:25px;font:11px 'Space Mono',monospace;color:var(--cyan);letter-spacing:1px}.screen:after{content:"HP  ████████   AMMO  042   //   CHARGE  68%";position:absolute;bottom:24px;left:25px;right:25px;color:#c8d5d6;font:11px 'Space Mono',monospace;border-top:1px solid rgba(95,230,237,.4);padding-top:13px}
+  .ship{position:absolute;left:50%;top:47%;width:420px;height:300px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 18px rgba(95,237,255,.62))}.ship svg{width:100%;height:100%;overflow:visible}.thruster{animation:thrust .7s ease-in-out infinite alternate;transform-origin:50% 50%}@keyframes thrust{to{opacity:.55;transform:scaleY(1.22)}}
+  .reticle{position:absolute;left:50%;top:48%;width:155px;height:155px;transform:translate(-50%,-50%);border:1px solid rgba(81,243,255,.7);border-radius:50%;box-shadow:0 0 17px rgba(81,243,255,.4)}.reticle:before,.reticle:after{content:"";position:absolute;background:var(--cyan)}.reticle:before{width:190px;height:1px;left:-18px;top:77px}.reticle:after{height:190px;width:1px;top:-18px;left:77px}.reticle b{position:absolute;inset:17px;border:1px dashed rgba(255,63,38,.75);border-radius:50%;animation:spin 8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+  .hud{position:absolute;z-index:8;top:1262px;left:68px;right:68px;display:flex;justify-content:space-between;align-items:end}.hud .label{font:12px 'Space Mono',monospace;color:var(--muted);letter-spacing:1px}.hud .big{font-size:26px;letter-spacing:2px;color:var(--chrome);margin-top:5px}.hud .big b{color:var(--red)}
+  .play{position:absolute;z-index:9;top:1378px;left:68px;right:68px;height:108px;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;gap:18px;background:linear-gradient(90deg,rgba(0,220,232,.15),rgba(255,49,29,.18));box-shadow:0 0 25px rgba(0,235,255,.27),inset 0 0 22px rgba(0,0,0,.6);font-size:37px;font-weight:800;letter-spacing:4px;text-shadow:0 0 12px var(--cyan);animation:button 1.6s ease-in-out infinite}.play:before{content:'▶';font-size:25px;color:var(--red);animation:blink 1s infinite}@keyframes button{50%{box-shadow:0 0 42px rgba(255,54,32,.42),inset 0 0 22px rgba(0,0,0,.6)}}
+  .footer{position:absolute;z-index:8;bottom:55px;left:68px;right:68px;display:flex;justify-content:space-between;font:12px 'Space Mono',monospace;color:#82959e;letter-spacing:1px}.footer strong{color:var(--cyan)}
+  .corner{position:absolute;z-index:8;width:31px;height:31px;border-color:var(--red);border-style:solid}.c1{top:105px;left:40px;border-width:2px 0 0 2px}.c2{top:105px;right:40px;border-width:2px 2px 0 0}.c3{bottom:40px;left:40px;border-width:0 0 2px 2px}.c4{bottom:40px;right:40px;border-width:0 2px 2px 0}
+</style>
+</head>
+<body>
+<main class="reel">
+  <div class="space"></div><div class="warning-grid"></div><div class="scan"></div><div class="vignette"></div>
+  <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+  <div class="topline"><div class="mark"><span class="dot"></span> CAPITAL SYNDICATE</div><div class="status">LIVE DEMO <b>●</b></div></div>
+  <section class="title"><div class="eyebrow">PROJECT FILE / ACT 01</div><h1>Capital<br>Syndicate<span>Operation Ferrum Wings</span></h1><div class="subtitle">A <em>playable browser shooter</em> + a reel generated from one proposal.</div></section>
+  <section class="browser"><div class="bar"><i></i><div class="url">capital-syndicate.local / operation-ferrum-wings</div></div><div class="screen"><div class="reticle"><b></b></div><div class="ship"><svg viewBox="0 0 420 300" aria-label="stylized chrome winged interceptor">
+    <defs><linearGradient id="metal" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fff"/><stop offset=".25" stop-color="#768b95"/><stop offset=".5" stop-color="#e5f2f1"/><stop offset=".72" stop-color="#50636e"/><stop offset="1" stop-color="#dce7e8"/></linearGradient><linearGradient id="wing" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#d7e5e5"/><stop offset=".45" stop-color="#5d727b"/><stop offset="1" stop-color="#17262f"/></linearGradient><linearGradient id="fire" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff"/><stop offset=".35" stop-color="#51f7ff"/><stop offset="1" stop-color="#ff3b24" stop-opacity="0"/></linearGradient></defs>
+    <g class="thruster"><path d="M180 211 L210 288 L240 211Z" fill="url(#fire)" opacity=".9"/><path d="M163 207 L177 270 L192 211Z" fill="url(#fire)" opacity=".62"/><path d="M228 211 L243 270 L258 207Z" fill="url(#fire)" opacity=".62"/></g>
+    <path d="M196 49 L211 16 L224 49 L224 150 L196 150Z" fill="url(#metal)" stroke="#efffff" stroke-width="2"/>
+    <path d="M196 127 L33 192 L10 242 L192 206Z" fill="url(#wing)" stroke="#c1d5d8" stroke-width="2"/><path d="M224 127 L387 192 L410 242 L228 206Z" fill="url(#wing)" stroke="#c1d5d8" stroke-width="2"/>
+    <path d="M193 143 L146 220 L207 208 L214 154Z" fill="#9caeb1" stroke="#eefafa" stroke-width="2"/><path d="M227 143 L274 220 L213 208 L206 154Z" fill="#536770" stroke="#a9c2c5" stroke-width="2"/>
+    <path d="M198 56 L210 34 L222 56 L218 137 L202 137Z" fill="#12242c" stroke="#55f5ff" stroke-width="2"/><path d="M210 44 L214 130" stroke="#fff" opacity=".8"/>
+    <path d="M45 192 L115 169 L92 220 L26 235Z M375 192 L305 169 L328 220 L394 235Z" fill="#253943" stroke="#ff5038" stroke-width="2"/>
+    <path d="M76 203 L151 177 M344 203 L269 177" stroke="#55f5ff" stroke-width="4" opacity=".9"/><circle cx="210" cy="153" r="8" fill="#ff4931" stroke="#fff" stroke-width="2"/>
+  </svg></div></div></section>
+  <div class="hud"><div><div class="label">MISSION STATUS</div><div class="big"><b>ARMED</b> / STORY HOOK LOCKED</div></div><div style="text-align:right"><div class="label">FORMAT</div><div class="big">HTML · CSS · SVG</div></div></div>
+  <div class="play"><span>PLAY IN BROWSER</span></div>
+  <div class="footer"><span>NO INSTALL / NO STOCK IMAGERY</span><strong>01—04</strong><span>OPERATION FERRUM WINGS</span></div>
+</main>
+</body>
+</html>

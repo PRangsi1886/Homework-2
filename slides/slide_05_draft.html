@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, initial-scale=1.0" />
+<title>Capital Syndicate — From One Brief to a Playable Reel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+  :root { --bg:#060817; --panel:#0d1229; --cyan:#4ff5ff; --pink:#ff4fb3; --violet:#9d7bff; --white:#f4f8ff; --muted:#9da8c6; --lime:#baff68; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; width:100%; height:100%; background:var(--bg); overflow:hidden; }
+  body { font-family:'Barlow Condensed', Arial, sans-serif; color:var(--white); }
+  .canvas { position:relative; width:1080px; height:1920px; overflow:hidden; background:
+    radial-gradient(ellipse at 50% 35%, rgba(33,35,94,.65), transparent 48%),
+    radial-gradient(ellipse at 12% 80%, rgba(0,205,255,.12), transparent 35%),
+    linear-gradient(155deg,#07091b 0%,#090b21 55%,#110719 100%); }
+  .canvas:before { content:""; position:absolute; inset:0; opacity:.22; background-image:linear-gradient(rgba(89,117,191,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(89,117,191,.16) 1px,transparent 1px); background-size:54px 54px; mask-image:linear-gradient(to bottom,transparent,black 20%,black 82%,transparent); }
+  .stars { position:absolute; inset:0; background-image:radial-gradient(circle at 9% 17%,#fff 0 2px,transparent 3px),radial-gradient(circle at 80% 9%,#4ff5ff 0 2px,transparent 3px),radial-gradient(circle at 93% 40%,#ff4fb3 0 2px,transparent 3px),radial-gradient(circle at 18% 53%,#fff 0 1px,transparent 2px),radial-gradient(circle at 74% 72%,#fff 0 1px,transparent 2px),radial-gradient(circle at 48% 92%,#4ff5ff 0 2px,transparent 3px); opacity:.8; }
+  .top { position:absolute; left:82px; right:82px; top:73px; display:flex; justify-content:space-between; align-items:center; }
+  .eyebrow { font-family:'Space Mono',monospace; color:var(--cyan); font-size:20px; letter-spacing:3px; text-transform:uppercase; }
+  .slide { font-family:'Space Mono',monospace; font-size:19px; color:#6f7ca5; letter-spacing:2px; }
+  .hero { position:absolute; left:82px; top:137px; width:900px; }
+  h1 { margin:0; font-size:95px; line-height:.86; letter-spacing:-2px; font-weight:900; text-transform:uppercase; max-width:850px; }
+  h1 span { color:var(--pink); text-shadow:0 0 22px rgba(255,79,179,.38); }
+  .sub { margin:29px 0 0; font-family:'Space Mono',monospace; font-size:20px; line-height:1.5; color:#b9c6e5; max-width:690px; }
+  .browser { position:absolute; left:82px; top:390px; width:916px; height:587px; border:2px solid rgba(109,144,223,.62); border-radius:24px; background:rgba(9,13,32,.92); box-shadow:0 0 0 8px rgba(49,65,123,.14), 0 28px 80px rgba(0,0,0,.5), 0 0 60px rgba(79,245,255,.1); overflow:hidden; }
+  .browserbar { height:60px; display:flex; align-items:center; gap:12px; padding:0 21px; background:linear-gradient(90deg,#131b3c,#10152e); border-bottom:1px solid #283463; }
+  .dot { width:12px; height:12px; border-radius:50%; background:#ff5a9d; box-shadow:22px 0 #ffce62,44px 0 #58f5c1; }
+  .address { margin-left:25px; height:30px; border-radius:8px; border:1px solid #334477; color:#8190b9; font:14px 'Space Mono',monospace; padding:7px 17px; width:462px; }
+  .window-label { margin-left:auto; color:#7585b2; font:13px 'Space Mono',monospace; }
+  .browser-main { height:527px; position:relative; padding:43px 53px; background:radial-gradient(circle at 50% 50%,rgba(60,25,107,.5),transparent 56%),linear-gradient(135deg,#0b1230,#14091f); }
+  .browser-main:after { content:""; position:absolute; inset:0; background:linear-gradient(120deg,transparent 30%,rgba(79,245,255,.08) 50%,transparent 70%); transform:skewX(-20deg); }
+  .launch-kicker { position:relative; z-index:1; font:700 16px 'Space Mono',monospace; color:var(--cyan); letter-spacing:4px; }
+  .act-title { position:relative; z-index:1; margin-top:12px; font-size:71px; line-height:.9; font-weight:900; text-transform:uppercase; }
+  .act-title em { color:var(--cyan); font-style:normal; }
+  .mission { position:relative; z-index:1; margin-top:16px; font:16px 'Space Mono',monospace; color:#9ea9cc; }
+  .launch { position:relative; z-index:2; margin-top:33px; display:inline-flex; align-items:center; justify-content:center; padding:21px 42px 20px; min-width:516px; color:#06101c; background:linear-gradient(100deg,#9dff62,#4ff5ff); border:0; border-radius:8px; font:900 29px 'Barlow Condensed',sans-serif; letter-spacing:1px; box-shadow:0 0 0 4px rgba(79,245,255,.18),0 0 32px rgba(79,245,255,.46); }
+  .launch:before { content:'▶'; margin-right:15px; font-size:22px; }
+  .promise { position:relative; z-index:1; display:flex; gap:13px; margin-top:26px; font:700 17px 'Space Mono',monospace; color:#e7edff; }
+  .promise b { color:var(--lime); font-weight:700; }
+  .ship { position:absolute; right:77px; bottom:33px; z-index:1; width:200px; height:190px; opacity:.9; }
+  .ship:before { content:""; position:absolute; left:70px; top:18px; width:62px; height:125px; background:linear-gradient(90deg,#6d73bd,#e7f8ff 48%,#8061d9); clip-path:polygon(50% 0,78% 42%,100% 100%,50% 78%,0 100%,22% 42%); filter:drop-shadow(0 0 11px #4ff5ff); }
+  .ship:after { content:""; position:absolute; left:77px; top:105px; width:48px; height:75px; background:linear-gradient(#ff4fb3,transparent); clip-path:polygon(50% 100%,0 0,100% 0); filter:blur(4px); }
+  .section-label { position:absolute; left:82px; top:1015px; font:700 18px 'Space Mono',monospace; color:var(--pink); letter-spacing:3px; text-transform:uppercase; }
+  .pipeline { position:absolute; left:82px; top:1064px; width:916px; display:flex; align-items:stretch; justify-content:space-between; }
+  .pipe-col { width:145px; display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; }
+  .pipe-col:not(:last-child):after { content:'➜'; position:absolute; right:-28px; top:31px; color:var(--cyan); font:24px Arial; text-shadow:0 0 12px rgba(79,245,255,.8); }
+  .icon { height:70px; width:70px; display:grid; place-items:center; border:1px solid #3b5a9e; border-radius:15px; background:linear-gradient(145deg,#17244f,#17112f); color:var(--cyan); font:700 25px 'Space Mono',monospace; box-shadow:inset 0 0 20px rgba(79,245,255,.08),0 0 18px rgba(157,123,255,.1); }
+  .pipe-col:nth-child(2) .icon,.pipe-col:nth-child(5) .icon { color:var(--pink); border-color:#80436f; }
+  .pipe-col:nth-child(4) .icon { color:var(--lime); border-color:#587e58; }
+  .pipe-text { margin-top:13px; font:700 16px/1.2 'Space Mono',monospace; color:#e8eeff; }
+  .pipe-note { margin-top:6px; font:12px 'Space Mono',monospace; color:#7886ae; }
+  .check-panel { position:absolute; left:82px; top:1284px; width:916px; height:293px; border:1px solid #2c3d70; border-radius:18px; background:linear-gradient(120deg,rgba(20,28,62,.9),rgba(16,11,36,.9)); padding:28px 34px; }
+  .check-title { display:flex; justify-content:space-between; align-items:center; font:700 20px 'Space Mono',monospace; color:var(--white); text-transform:uppercase; letter-spacing:2px; }
+  .complete { color:var(--lime); font-size:15px; letter-spacing:1px; }
+  .checks { display:grid; grid-template-columns:1fr 1fr; gap:19px 55px; margin-top:27px; }
+  .check { display:flex; align-items:center; gap:15px; font:700 22px 'Barlow Condensed',sans-serif; letter-spacing:.5px; }
+  .badge { width:29px; height:29px; display:grid; place-items:center; border-radius:50%; background:rgba(186,255,104,.14); border:1px solid var(--lime); color:var(--lime); font:700 16px Arial; }
+  .check small { display:block; color:#8491b5; font:12px 'Space Mono',monospace; margin-top:3px; }
+  .footer { position:absolute; left:82px; right:82px; bottom:63px; padding-top:20px; border-top:1px solid #27345e; display:flex; justify-content:space-between; color:#8490b0; font:14px 'Space Mono',monospace; }
+  .footer strong { color:#c7d2f3; font-weight:400; }
+  .signal { color:var(--cyan); }
+</style>
+</head>
+<body>
+<main class="canvas">
+  <div class="stars"></div>
+  <div class="top"><div class="eyebrow">Capital Syndicate / Act 1</div><div class="slide">05 — FINAL TRANSMISSION</div></div>
+  <section class="hero">
+    <h1>From One Brief<br>to a <span>Playable Reel</span></h1>
+    <p class="sub">One proposal becomes a browser launch, a structured story, and a finished social artifact.</p>
+  </section>
+  <section class="browser" aria-label="Browser launch screen">
+    <div class="browserbar"><div class="dot"></div><div class="address">capital-syndicate.local / act-1</div><div class="window-label">SECURE LINK · ONLINE</div></div>
+    <div class="browser-main">
+      <div class="launch-kicker">OPERATION FERRUM WINGS // READY</div>
+      <div class="act-title">Capital<br><em>Syndicate</em></div>
+      <div class="mission">ACT 1 · BREAK THE CHROMIUM LINE</div>
+      <div class="launch">PLAY ACT 1 IN BROWSER</div>
+      <div class="promise"><b>✓</b> No install <span>•</span> <b>✓</b> Public link + README</div>
+      <div class="ship"></div>
+    </div>
+  </section>
+  <div class="section-label">The production pipeline // brief → launch</div>
+  <section class="pipeline" aria-label="Production pipeline diagram">
+    <div class="pipe-col"><div class="icon">DOC</div><div class="pipe-text">Proposal</div><div class="pipe-note">one brief</div></div>
+    <div class="pipe-col"><div class="icon">.py</div><div class="pipe-text">reel_agent.py</div><div class="pipe-note">plans + critiques</div></div>
+    <div class="pipe-col"><div class="icon">▦</div><div class="pipe-text">Structured<br>slides</div><div class="pipe-note">HTML / CSS / SVG</div></div>
+    <div class="pipe-col"><div class="icon">♫</div><div class="pipe-text">tts-1-hd<br>narration</div><div class="pipe-note">voice layer</div></div>
+    <div class="pipe-col"><div class="icon">OUT</div><div class="pipe-text">ai_grading/<br>artifacts</div><div class="pipe-note">auditable run</div></div>
+    <div class="pipe-col"><div class="icon">▶</div><div class="pipe-text">reel.mp4</div><div class="pipe-note">shareable finish</div></div>
+  </section>
+  <section class="check-panel">
+    <div class="check-title"><span>Mission complete</span><span class="complete">● ALL SYSTEMS VERIFIED</span></div>
+    <div class="checks">
+      <div class="check"><span class="badge">✓</span><div>Playable URL<small>click through · no install</small></div></div>
+      <div class="check"><span class="badge">✓</span><div>30–60s MP4<small>social-ready output</small></div></div>
+      <div class="check"><span class="badge">✓</span><div>Mechanics + narrative<small>playable story pitch</small></div></div>
+      <div class="check"><span class="badge">✓</span><div>Generative pipeline<small>brief to artifact</small></div></div>
+    </div>
+  </section>
+  <footer class="footer"><strong>Capital Syndicate — Operation Ferrum Wings / Poom Rangsi</strong><span class="signal">END OF ACT 1 // TRANSMISSION COMPLETE</span></footer>
+</main>
+</body>
+</html>
