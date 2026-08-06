@@ -136,9 +136,24 @@ def get_planner_agent():
                 "(text + visuals) and narration that can be spoken in under 15 seconds. "
                 "At least one slide MUST be a rich HTML/CSS/SVG visual (infographic, "
                 "poster, or illustration)—not plain text with a tiny icon. "
-                "No stock photos. No image-generation models. Match the proposal closely."
+                "No stock photos. No image-generation models. Match the proposal closely. "
+                "Use the read_proposal_excerpt tool when you need to re-check the brief."
             ),
         )
+
+        @_planner_agent.tool
+        async def read_proposal_excerpt(ctx: RunContext[None], max_chars: int = 2000) -> str:
+            """Read the project_proposal.md brief (truncated) to ground the slide plan."""
+            path = ROOT / "project_proposal.md"
+            text = path.read_text(encoding="utf-8")
+            return text[: max(200, min(max_chars, 8000))]
+
+        @_planner_agent.tool
+        async def count_words(ctx: RunContext[None], text: str) -> dict[str, int]:
+            """Count words/characters to keep narration under ~15 seconds (~35–45 words)."""
+            words = [w for w in text.strip().split() if w]
+            return {"words": len(words), "chars": len(text)}
+
     return _planner_agent
 
 
