@@ -1,55 +1,102 @@
-# Capital Syndicate Act 1: Operation Ferrum Wings
+# Homework 2 — Final Project Video Reel Agent
 
-Arcade top-scrolling space shooter inspired by [Chromium B.S.U.](https://github.com/midzer/chromium-bsu) mechanics and [Ikaruga](https://en.wikipedia.org/wiki/Ikaruga)'s high-contrast geometric art style.
+**Course:** Generative AI and Social Media (Summer 2026)  
+**Repo:** Capital Syndicate Act 1 demo + PydanticAI reel agent
 
-You command robotic fighters escorting a freighter across **four sectors**. Clear waves and bosses to deliver the cargo. Sectors 1–3 end with a boss; sector 4 ends with the final blockade commander.
+This repository contains:
 
-## Play
+1. **`project_proposal.md`** — final project proposal (input to the agent)
+2. **`reel_agent.py`** — PydanticAI agent that turns the proposal into a short video reel
+3. **Playable game demo** — Capital Syndicate Act 1 (browser shooter the reel pitches)
 
-**Always use this link** (same URL for every update on this branch):
+## Play the game (stable link)
 
 https://raw.githack.com/PRangsi1886/Homework-2/cursor/capital-syndicate-0ccd/index.html
 
-Hard-refresh (`Ctrl+Shift+R` / `Cmd+Shift+R`) after updates. Intro video loads from jsDelivr when this CDN mishandles MP4 MIME types.
+Hard-refresh after updates. Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
 
-Or open `index.html` locally:
+## Agent requirements (HW2)
+
+| Requirement | Implementation |
+| --- | --- |
+| LLM | `gpt-5.6-luna` via PydanticAI (`openai:gpt-5.6-luna`) |
+| TTS | OpenAI `tts-1-hd` |
+| Slide plan | Structured Pydantic `SlidePlan` → `ai_grading/slide_plan.json` |
+| HTML slides | `slides/slide_XX.html` (at least one rich HTML/CSS/SVG visual) |
+| Critique + revise | Parallel per-slide critique → revised HTML/narration → `ai_grading/critique_feedback.json` |
+| Parallelization | `asyncio.gather` across slides; revise HTML and TTS run together per slide |
+| Video reel | `ffmpeg` stitch → `output/reel.mp4` (**upload to grading site**, not required on GitHub) |
+| Flow diagram | `ai_grading/agent_flow.png` |
+
+## Setup
 
 ```bash
-python3 -m http.server 8080
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m playwright install chromium
+
+cp .env.example .env
+# put OPENAI_API_KEY in .env  (never commit .env)
 ```
 
-Then visit `http://localhost:8080`.
+## Run the reel agent
 
-## Controls
+```bash
+python reel_agent.py
+```
+
+Optional:
+
+```bash
+python reel_agent.py --skip-video          # slides + audio + grading JSON only
+python reel_agent.py --flow-only           # regenerate agent_flow.png
+python reel_agent.py --proposal project_proposal.md
+```
+
+Outputs:
+
+```
+slides/                  # draft + final HTML slides
+audio/                   # per-slide mp3 (gitignored)
+output/frames/           # PNG frames
+output/reel.mp4          # stitched reel (gitignored; upload to grading website)
+ai_grading/
+  slide_plan.json
+  critique_feedback.json
+  agent_flow.png
+```
+
+## Required submission layout
+
+```
+your-repo/
+├── README.md
+├── requirements.txt
+├── .gitignore          # includes .env and __pycache__
+├── project_proposal.md
+├── reel_agent.py
+├── slides/
+└── ai_grading/
+    ├── slide_plan.json
+    ├── critique_feedback.json
+    └── agent_flow.png
+```
+
+Upload **`reel.mp4`** on the grading website (do not rely on GitHub for the video).
+
+## Game controls (demo)
 
 | Input | Action |
 | --- | --- |
-| Mouse / WASD / Arrows | Move fighter |
-| Hold Left Click | Fire |
-| Space (at 100% laser) | Super laser |
-| `1` `2` `3` `4` | Gun / Ion / Plasma / Rockets (3-shot cone) |
-| `0` or Enter twice | Self-destruct (eject ammo, clear sky) |
-| Right-click twice | Self-destruct |
-| `P` / Esc | Pause |
-| `M` | Mute / unmute |
-| Volume slider (bottom-left) | Adjust master volume (SFX + BGM) |
-
-Procedural file BGM loads from `assets/bgm.mp3` when present (falls back to synth). An intro video plays from `assets/cutscenes/intro.mp4` after Launch Sortie.
-
-**Pickup sprites:** Animated strips live in `assets/pickups/` (`shield`, `repair`, `super`, `rocket`, `ammo`, plus optional `*_alt` variants). Horizontal sheets; frame size = sheet height. Replace those PNGs with your own to swap art.
-
-**Enemy sprites:** Animated strips in `assets/enemies/` (`scout`, `dart`, `lancer`, `heavy`, `boss`, `finalBoss`, plus `*_alt` variants). Same horizontal-strip format — drop in replacements to use your originals.
-
-**Player / weapons / FX:** Sheets in `assets/player/` (`hero`, `gun`, `ion`, `plasma`, `rocket`, `muzzle`, `thrust`, `spark`, `shield_fx`). Replace those PNGs to swap art.
-
-## Signature mechanics (Chromium B.S.U.–style)
-
-- **Ramming** — collisions damage both ships.
-- **Limited special ammo** — ion pierces; plasma hits hard and spends fast.
-- **Strategic suicide** — self-destruct clears the screen and ejects ammo for the next fighter.
-- **Launch burst** — deploying a new fighter damages nearby hostiles.
-- **Power-ups** — shield, hull repair, super shields. Letting a super shield pass grants an extra fighter; other pickups award bonus score if ignored.
+| Mouse / WASD | Move |
+| Hold click | Fire |
+| Space @ 100% laser | Super laser |
+| `1`–`4` | Weapons |
+| `0` twice | Self-destruct |
+| `M` | Mute |
 
 ## Stack
 
-Vanilla HTML / CSS / Canvas / ES modules. No build step.
+- **Agent:** Python, PydanticAI, OpenAI TTS, Playwright, ffmpeg  
+- **Game:** Vanilla HTML / CSS / Canvas / ES modules (no build step)
