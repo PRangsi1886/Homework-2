@@ -11,9 +11,14 @@ This repository contains:
 
 ## Play the game (stable link)
 
-https://raw.githack.com/PRangsi1886/Homework-2/cursor/capital-syndicate-0ccd/index.html
+https://raw.githack.com/PRangsi1886/Homework-2/main/index.html
 
 Hard-refresh after updates. Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
+
+## Submit on the grading website (Canvas)
+
+1. Repo URL: `https://github.com/PRangsi1886/Homework-2`
+2. Upload `reel.mp4` (~42 seconds) — generate with `python reel_agent.py` or use your local `output/reel.mp4`
 
 ## Agent requirements (HW2)
 

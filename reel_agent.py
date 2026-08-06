@@ -29,7 +29,7 @@ from typing import Any
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent
