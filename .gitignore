@@ -12,6 +12,8 @@ venv/
 audio/
 output/
 *.mp4
+!assets/**/*.mp4
+!minigames/**/*.mp4
 !ai_grading/**
 .netlify/
 
