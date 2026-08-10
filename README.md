@@ -11,10 +11,12 @@ This repository contains:
 
 ## Play the game
 
-**Latest (hard-refresh / cache-bust):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/443490e73e94ce668954a86f21730023fb0d4f4a/index.html
+**Use this link (jsDelivr — avoids stale githack cache):**  
+https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/index.html
 
-If you still see the old intro, open a private window or use the commit-pinned link from the latest release notes.
+You should see **OPENING v3** in the bottom-left of the intro. If you do not, you are on a cached old build — open that link in a private/incognito window.
+
+Do **not** use `raw.githack.com/.../main/` — that host is still serving the old Clideo intro.
 
 Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
 

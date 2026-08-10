@@ -1,33 +1,36 @@
 /**
  * Intro cinematic cutscene + thin factories for game.js hooks.
  * Primary intro: image-sequence opening (Agent Zlisto / Princess Lisa story).
- * Fallback: legacy video cutscene if sequence assets fail to load.
+ * Fallback: stitched opening video (same 5 beats) if stills fail to load.
  */
 import { W, H } from "./entities.js";
 
+/** Bump to force CDN cache refresh of opening assets. */
+const OPENING_ASSET_VER = "opening-cinematic-3";
+
 const OPENING_BEATS = [
   {
-    file: "01-briefing.png",
+    file: "01-briefing.jpg",
     caption: "Welcome to Capital Syndicate: Operation Ferrum Wings — Agent Zlisto.",
     hold: 3.4,
   },
   {
-    file: "02-legacy-base.png",
+    file: "02-legacy-base.jpg",
     caption: "We got some urgent work to do… and only you can finish it.",
     hold: 3.2,
   },
   {
-    file: "03-lisa-captured.png",
+    file: "03-lisa-captured.jpg",
     caption: "Princess Lisa has been captured — only you can save her and the world.",
     hold: 3.6,
   },
   {
-    file: "04-board-fighter.png",
+    file: "04-board-fighter.jpg",
     caption: "Zlisto: Leave it to me. I got this.",
     hold: 3.0,
   },
   {
-    file: "05-launch.png",
+    file: "05-launch.jpg",
     caption: "All systems ready. Prepare for takeoff.",
     hold: 3.2,
   },
@@ -37,23 +40,33 @@ const OPENING_LOCAL_DIR = "assets/cutscenes/opening/";
 const OPENING_CDN_BASE =
   "https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/opening/";
 
+function isCdnHost(host) {
+  return (
+    /githack\.com$/i.test(host) ||
+    /statically\.io$/i.test(host) ||
+    /jsdelivr\.net$/i.test(host) ||
+    /github\.io$/i.test(host)
+  );
+}
+
 function openingBeats() {
   const host = typeof location !== "undefined" ? location.hostname : "";
-  // githack often mishandles large binaries — prefer jsDelivr there.
-  const useCdn = /githack\.com$/i.test(host) || /statically\.io$/i.test(host);
+  // Prefer jsDelivr on mirror hosts; large binaries often fail on githack.
+  const useCdn = isCdnHost(host);
   return OPENING_BEATS.map((b) => ({
     ...b,
-    src: useCdn ? `${OPENING_CDN_BASE}${b.file}` : `${OPENING_LOCAL_DIR}${b.file}`,
+    src: useCdn
+      ? `${OPENING_CDN_BASE}${b.file}?v=${OPENING_ASSET_VER}`
+      : `${OPENING_LOCAL_DIR}${b.file}?v=${OPENING_ASSET_VER}`,
   }));
 }
 
-const INTRO_VIDEO_LOCAL = "assets/cutscenes/intro.mp4";
-const INTRO_VIDEO_CDN =
-  "https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/intro.mp4";
+const INTRO_VIDEO_LOCAL = `assets/cutscenes/intro.mp4?v=${OPENING_ASSET_VER}`;
+const INTRO_VIDEO_CDN = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/intro.mp4?v=${OPENING_ASSET_VER}`;
 
 function introVideoSources() {
   const host = typeof location !== "undefined" ? location.hostname : "";
-  if (/githack\.com$/i.test(host) || /statically\.io$/i.test(host)) {
+  if (isCdnHost(host)) {
     return [INTRO_VIDEO_CDN, INTRO_VIDEO_LOCAL];
   }
   return [INTRO_VIDEO_LOCAL, INTRO_VIDEO_CDN];
@@ -62,6 +75,15 @@ function introVideoSources() {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.decoding = "async";
+    try {
+      const abs = new URL(src, typeof location !== "undefined" ? location.href : undefined);
+      if (typeof location !== "undefined" && abs.origin !== location.origin) {
+        img.crossOrigin = "anonymous";
+      }
+    } catch {
+      /* ignore */
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Failed to load ${src}`));
     img.src = src;
@@ -95,6 +117,7 @@ export class ImageSequenceCutscene {
 
   async preload() {
     try {
+      // Load sequentially-friendly: all in parallel but small JPGs.
       const images = await Promise.all(this.beats.map((b) => loadImage(b.src)));
       images.forEach((img, i) => {
         this.beats[i].img = img;
@@ -193,7 +216,6 @@ export class ImageSequenceCutscene {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Word wrap
     const words = String(text).split(/\s+/);
     const lines = [];
     let line = "";
@@ -248,7 +270,6 @@ export class ImageSequenceCutscene {
       ctx.globalAlpha = 1;
     }
 
-    // Letterbox
     ctx.fillStyle = "#010308";
     ctx.fillRect(0, 0, w, 56);
     ctx.fillRect(0, h - 56, w, 56);
@@ -256,13 +277,17 @@ export class ImageSequenceCutscene {
     const caption = this.cross > 0.55 && next ? next.caption : beat?.caption;
     this.drawCaption(ctx, caption);
 
+    ctx.fillStyle = "rgba(158, 179, 209, 0.55)";
+    ctx.font = "600 11px Rajdhani, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("OPENING v3", 24, h - 20);
+
     ctx.fillStyle = "rgba(158, 179, 209, 0.9)";
     ctx.font = "600 14px Rajdhani, sans-serif";
     ctx.textAlign = "right";
-    ctx.textBaseline = "alphabetic";
     ctx.fillText("CLICK / SPACE TO SKIP", w - 24, h - 20);
 
-    // Beat pips
     const pipY = 28;
     const total = this.beats.length;
     const pipW = 28;
@@ -483,15 +508,15 @@ export function createIntroCutscene(onDone) {
     },
     update(dt) {
       if (finished) return;
-      // If stills failed, swap to legacy video once.
+      // If stills failed, swap to stitched opening video once.
       if (active === sequence && sequence.failed && !video) {
         video = new VideoCutscene({ src: introVideoSources(), onDone: finish });
         active = video;
       }
-      // Timeout: if stills never become ready, fall back.
+      // Timeout: stills should load fast (JPGs); fall back if stuck.
       if (active === sequence && !sequence.ready && !sequence.failed) {
         waited += dt;
-        if (waited > 5) {
+        if (waited > 8) {
           sequence.failed = true;
           video = new VideoCutscene({ src: introVideoSources(), onDone: finish });
           active = video;
