@@ -6,7 +6,7 @@
 import { W, H } from "./entities.js";
 
 /** Bump to force CDN / browser cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-vo-5";
+const OPENING_ASSET_VER = "opening-vo-6";
 /** Pin CDN assets to a known-good commit once VO lands on main. */
 const OPENING_CDN_REF = "a29476e2c9f5abc3d55d565b1932e21b0cf4712b";
 
@@ -346,8 +346,8 @@ export class ImageSequenceCutscene {
   drawCover(ctx, img) {
     if (!img) return;
     const { w, h } = this;
-    // Static cover fit — no Ken Burns zoom/pan during opening beats.
-    const scale = Math.max(w / img.width, h / img.height);
+    // Static contain fit — show the full still, no zoom/crop/Ken Burns.
+    const scale = Math.min(w / img.width, h / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (w - dw) / 2;

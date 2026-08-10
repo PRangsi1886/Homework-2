@@ -2,26 +2,33 @@
 
 Drop-in browser mini-game for the **Board of Realities** collab.
 
-This folder is the packaged game under `minigames/capital-syndicate/`.
+## Quick drop-in
+
+Copy this entire folder to your collab repo:
+
+```text
+Final-Project-board-of-realities/minigames/capital-syndicate/
+```
+
+Or download the release zip `capital-syndicate-minigame.zip` from this repo’s Releases and extract it to that path.
+
+Then link / iframe / route the board hub to:
+
+```text
+minigames/capital-syndicate/index.html
+```
+
+Asset paths are relative to this folder — no rewrite needed.
 
 ## Play standalone
 
 ```bash
 cd minigames/capital-syndicate
 python3 -m http.server 8080
-# → http://localhost:8080
 ```
 
-Packaged demo:
+Demo:
 https://rawcdn.githack.com/PRangsi1886/Homework-2/main/minigames/capital-syndicate/index.html
-
-## Integrate into Board of Realities
-
-1. Copy this entire folder to:
-   `Final-Project-board-of-realities/minigames/capital-syndicate/`
-2. From the board hub, link / iframe / route to:
-   `minigames/capital-syndicate/index.html`
-3. Asset paths are relative to this folder — no rewrite needed.
 
 ## Controls
 
