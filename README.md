@@ -12,7 +12,7 @@ This repository contains:
 ## Play the game
 
 **Latest (hard-refresh / cache-bust):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/main/index.html?v=opening-cinematic-2
+https://rawcdn.githack.com/PRangsi1886/Homework-2/443490e73e94ce668954a86f21730023fb0d4f4a/index.html
 
 If you still see the old intro, open a private window or use the commit-pinned link from the latest release notes.
 
