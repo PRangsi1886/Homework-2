@@ -6,7 +6,9 @@
 import { W, H } from "./entities.js";
 
 /** Bump to force CDN cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-cinematic-3";
+const OPENING_ASSET_VER = "opening-cinematic-3b";
+/** Pin CDN assets to a commit — @main stays stale on jsDelivr for days. */
+const OPENING_CDN_REF = "c41e76319d95d5a17f76ecec8c042617068782f8";
 
 const OPENING_BEATS = [
   {
@@ -37,8 +39,7 @@ const OPENING_BEATS = [
 ];
 
 const OPENING_LOCAL_DIR = "assets/cutscenes/opening/";
-const OPENING_CDN_BASE =
-  "https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/opening/";
+const OPENING_CDN_BASE = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@${OPENING_CDN_REF}/assets/cutscenes/opening/`;
 
 function isCdnHost(host) {
   return (
