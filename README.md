@@ -12,7 +12,7 @@ This repository contains:
 ## Play the game
 
 **Use this link only (commit-pinned — skips stale caches):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/cb914e75233b1dc22ca8771c0f0d1b3aed8e8c3d/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/75a9ca43adc39628d0bf6ddc9903a764affee78e/index.html
 
 You must see **OPENING v3** in the bottom-left, speaker-labeled subtitles (COMMAND / ZLISTO / OPS), and hear the opening voice-over.
 
@@ -20,7 +20,7 @@ Do **not** use raw.githack.com main-branch bookmarks — that host can keep serv
 
 Board of Realities drop-in: folder `minigames/capital-syndicate/` or release zip https://github.com/PRangsi1886/Homework-2/releases/tag/capital-syndicate-minigame
 
-Or locally: `python3 -m http.server 8080` then open http://localhost:8080
+Or locally: run `python3 -m http.server 8080` then open http://localhost:8080localhost:8080
 
 ## Submit on the grading website (Canvas)
 
