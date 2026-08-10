@@ -12,7 +12,7 @@ This repository contains:
 ## Play the game
 
 **Use this link only (commit-pinned — skips stale caches):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/be0328162722d652d55e3ef376212517f3172d19/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/4a582973b5b1292cdc46c21f0795fe001201f695/index.html
 
 You must see **OPENING v3** in the bottom-left of the intro, plus Agent Zlisto / Princess Lisa stills with captions.
 
