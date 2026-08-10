@@ -12,10 +12,10 @@ This repository contains:
 ## Play the game
 
 **Use this link (jsDelivr — avoids stale githack cache):**  
-https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@c41e76319d95d5a17f76ecec8c042617068782f8/index.html
+https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@fce7d3b8ad477b33686bea21284ae4c6203e4f36/index.html
 
 Backup (commit-pinned githack):
-https://rawcdn.githack.com/PRangsi1886/Homework-2/c41e76319d95d5a17f76ecec8c042617068782f8/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/fce7d3b8ad477b33686bea21284ae4c6203e4f36/index.html
 
 You should see **OPENING v3** in the bottom-left of the intro. If you do not, you are on a cached old build — open that link in a private/incognito window.
 
