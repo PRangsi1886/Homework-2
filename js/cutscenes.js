@@ -471,6 +471,11 @@ export class VideoCutscene {
     ctx.fillRect(0, 0, w, 56);
     ctx.fillRect(0, h - 56, w, 56);
 
+    ctx.fillStyle = "rgba(158, 179, 209, 0.55)";
+    ctx.font = "600 11px Rajdhani, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("OPENING v3", 24, h - 20);
+
     ctx.fillStyle = "rgba(158, 179, 209, 0.9)";
     ctx.font = "600 14px Rajdhani, sans-serif";
     ctx.textAlign = "right";
