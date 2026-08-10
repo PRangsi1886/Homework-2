@@ -63,7 +63,7 @@ function openingBeats() {
 }
 
 const INTRO_VIDEO_LOCAL = `assets/cutscenes/intro.mp4?v=${OPENING_ASSET_VER}`;
-const INTRO_VIDEO_CDN = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/intro.mp4?v=${OPENING_ASSET_VER}`;
+const INTRO_VIDEO_CDN = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@${OPENING_CDN_REF}/assets/cutscenes/intro.mp4?v=${OPENING_ASSET_VER}`;
 
 function introVideoSources() {
   const host = typeof location !== "undefined" ? location.hostname : "";
