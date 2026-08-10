@@ -5,7 +5,8 @@
     "speaker": "COMMAND",
     "text": "Welcome to Capital Syndicate: Operation Ferrum Wings. Agent Zlisto \u2014 this briefing is for you.",
     "file": "01-briefing.mp3",
-    "duration": 8.304
+    "duration": 6.168,
+    "rate": "+28%"
   },
   {
     "id": "02-legacy-base",
@@ -13,7 +14,8 @@
     "speaker": "COMMAND",
     "text": "We've got urgent work to do\u2026 and only you can finish it.",
     "file": "02-legacy-base.mp3",
-    "duration": 4.416
+    "duration": 3.288,
+    "rate": "+28%"
   },
   {
     "id": "03-lisa-captured",
@@ -21,7 +23,8 @@
     "speaker": "COMMAND",
     "text": "Princess Lisa has been captured. Only you can save her \u2014 and the world.",
     "file": "03-lisa-captured.mp3",
-    "duration": 6.504
+    "duration": 4.848,
+    "rate": "+24%"
   },
   {
     "id": "04-board-fighter",
