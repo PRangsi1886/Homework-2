@@ -7,31 +7,45 @@ import { W, H } from "./entities.js";
 
 const OPENING_BEATS = [
   {
-    src: "assets/cutscenes/opening/01-briefing.png",
+    file: "01-briefing.png",
     caption: "Welcome to Capital Syndicate: Operation Ferrum Wings — Agent Zlisto.",
     hold: 3.4,
   },
   {
-    src: "assets/cutscenes/opening/02-legacy-base.png",
+    file: "02-legacy-base.png",
     caption: "We got some urgent work to do… and only you can finish it.",
     hold: 3.2,
   },
   {
-    src: "assets/cutscenes/opening/03-lisa-captured.png",
+    file: "03-lisa-captured.png",
     caption: "Princess Lisa has been captured — only you can save her and the world.",
     hold: 3.6,
   },
   {
-    src: "assets/cutscenes/opening/04-board-fighter.png",
+    file: "04-board-fighter.png",
     caption: "Zlisto: Leave it to me. I got this.",
     hold: 3.0,
   },
   {
-    src: "assets/cutscenes/opening/05-launch.png",
+    file: "05-launch.png",
     caption: "All systems ready. Prepare for takeoff.",
     hold: 3.2,
   },
 ];
+
+const OPENING_LOCAL_DIR = "assets/cutscenes/opening/";
+const OPENING_CDN_BASE =
+  "https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@main/assets/cutscenes/opening/";
+
+function openingBeats() {
+  const host = typeof location !== "undefined" ? location.hostname : "";
+  // githack often mishandles large binaries — prefer jsDelivr there.
+  const useCdn = /githack\.com$/i.test(host) || /statically\.io$/i.test(host);
+  return OPENING_BEATS.map((b) => ({
+    ...b,
+    src: useCdn ? `${OPENING_CDN_BASE}${b.file}` : `${OPENING_LOCAL_DIR}${b.file}`,
+  }));
+}
 
 const INTRO_VIDEO_LOCAL = "assets/cutscenes/intro.mp4";
 const INTRO_VIDEO_CDN =
@@ -59,7 +73,7 @@ function loadImage(src) {
  * Contract: update(dt) / draw(ctx) / skip() / onDone.
  */
 export class ImageSequenceCutscene {
-  constructor({ beats = OPENING_BEATS, onDone, width = W, height = H } = {}) {
+  constructor({ beats, onDone, width = W, height = H } = {}) {
     this.onDone = onDone;
     this.onComplete = onDone;
     this.w = width;
@@ -73,7 +87,7 @@ export class ImageSequenceCutscene {
     this.ready = false;
     this.failed = false;
     this._finishing = false;
-    this.beats = beats.map((b) => ({ ...b, img: null }));
+    this.beats = (beats || openingBeats()).map((b) => ({ ...b, img: null }));
     this.transition = 0.45;
 
     void this.preload();
@@ -455,7 +469,7 @@ export function createIntroCutscene(onDone) {
   };
 
   const sequence = new ImageSequenceCutscene({
-    beats: OPENING_BEATS,
+    beats: openingBeats(),
     onDone: finish,
   });
 

@@ -9,11 +9,14 @@ This repository contains:
 2. **`reel_agent.py`** — PydanticAI agent that turns the proposal into a short video reel
 3. **Playable game demo** — Capital Syndicate Act 1 (browser shooter the reel pitches)
 
-## Play the game (stable link)
+## Play the game
 
-https://raw.githack.com/PRangsi1886/Homework-2/main/index.html
+**Latest (hard-refresh / cache-bust):**  
+https://rawcdn.githack.com/PRangsi1886/Homework-2/main/index.html?v=opening-cinematic-2
 
-Hard-refresh after updates. Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
+If you still see the old intro, open a private window or use the commit-pinned link from the latest release notes.
+
+Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
 
 ## Submit on the grading website (Canvas)
 
