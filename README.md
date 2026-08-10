@@ -5,23 +5,20 @@
 
 This repository contains:
 
-1. **`project_proposal.md`** — final project proposal (input to the agent)
-2. **`reel_agent.py`** — PydanticAI agent that turns the proposal into a short video reel
+1. **** — final project proposal (input to the agent)
+2. **** — PydanticAI agent that turns the proposal into a short video reel
 3. **Playable game demo** — Capital Syndicate Act 1 (browser shooter the reel pitches)
 
 ## Play the game
 
-**Use this link (jsDelivr — avoids stale githack cache):**  
-https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@fce7d3b8ad477b33686bea21284ae4c6203e4f36/index.html
+**Use this link only (commit-pinned — skips stale caches):**  
+https://rawcdn.githack.com/PRangsi1886/Homework-2/2ff01a794e97b2552d39688ea2f976ce4c60d0af/index.html
 
-Backup (commit-pinned githack):
-https://rawcdn.githack.com/PRangsi1886/Homework-2/fce7d3b8ad477b33686bea21284ae4c6203e4f36/index.html
+You must see **OPENING v3** in the bottom-left of the intro, plus Agent Zlisto / Princess Lisa stills with captions.
 
-You should see **OPENING v3** in the bottom-left of the intro. If you do not, you are on a cached old build — open that link in a private/incognito window.
+Do **not** use  or any old bookmark — that host can keep serving the old Clideo intro forever.
 
-Do **not** use `raw.githack.com/.../main/` — that host is still serving the old Clideo intro.
-
-Or locally: `python3 -m http.server 8080` → `http://localhost:8080`.
+Or locally:  → .
 
 ## Submit on the grading website (Canvas)
 

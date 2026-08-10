@@ -278,8 +278,8 @@ export class ImageSequenceCutscene {
     const caption = this.cross > 0.55 && next ? next.caption : beat?.caption;
     this.drawCaption(ctx, caption);
 
-    ctx.fillStyle = "rgba(158, 179, 209, 0.55)";
-    ctx.font = "600 11px Rajdhani, sans-serif";
+    ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
+    ctx.font = "700 13px Rajdhani, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
     ctx.fillText("OPENING v3", 24, h - 20);
@@ -472,8 +472,8 @@ export class VideoCutscene {
     ctx.fillRect(0, 0, w, 56);
     ctx.fillRect(0, h - 56, w, 56);
 
-    ctx.fillStyle = "rgba(158, 179, 209, 0.55)";
-    ctx.font = "600 11px Rajdhani, sans-serif";
+    ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
+    ctx.font = "700 13px Rajdhani, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText("OPENING v3", 24, h - 20);
 
