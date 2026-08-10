@@ -12,7 +12,7 @@ This repository contains:
 ## Play the game
 
 **Use this link only (commit-pinned — skips stale caches):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/b759dea787240efeb67df62b16ebe5e9be026667/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/5ddd357caa7940806062aee843295d715ebd524e/index.html
 
 You must see **OPENING v3** in the bottom-left, speaker-labeled subtitles (COMMAND / ZLISTO / OPS), and hear the opening voice-over.
 
