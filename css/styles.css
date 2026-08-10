@@ -500,3 +500,161 @@ kbd {
     width: 84px;
   }
 }
+
+/* --- Victory: Agent Zlisto cheer + exploding blockade --- */
+.victory-overlay {
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+  background: #030406;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+
+.victory-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.victory-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+  animation: victory-art-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.victory-blast {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 72%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 200, 90, 0.45) 0%, rgba(255, 90, 60, 0.18) 35%, transparent 68%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: victory-blast-pulse 1.4s ease-in-out infinite;
+}
+
+.victory-shock {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 42%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 180, 80, 0.55);
+  box-shadow: 0 0 28px rgba(255, 120, 60, 0.35);
+  pointer-events: none;
+  animation: victory-shockwave 1.8s cubic-bezier(0.15, 0.8, 0.2, 1) infinite;
+}
+
+.victory-embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(2px 2px at 18% 42%, rgba(255, 220, 140, 0.9), transparent),
+    radial-gradient(2px 2px at 72% 28%, rgba(255, 120, 80, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 58% 55%, rgba(255, 240, 180, 0.8), transparent),
+    radial-gradient(2px 2px at 34% 62%, rgba(255, 160, 70, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 81% 48%, rgba(255, 210, 120, 0.7), transparent);
+  animation: victory-embers-drift 2.8s linear infinite;
+}
+
+.victory-copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  padding: 28px 24px 36px;
+  background: linear-gradient(180deg, transparent 0%, rgba(3, 4, 6, 0.55) 28%, rgba(3, 4, 6, 0.92) 100%);
+}
+
+.victory-brand {
+  animation: title-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.victory-copy h2 {
+  margin: 0;
+  animation: title-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.06s both;
+  text-shadow: 0 0 28px rgba(232, 162, 74, 0.35);
+}
+
+.victory-copy .tagline {
+  animation: title-rise 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s both;
+}
+
+.victory-copy .btn {
+  animation: title-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.18s both;
+}
+
+@keyframes victory-art-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+    filter: brightness(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes victory-blast-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes victory-shockwave {
+  0% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  70% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.55);
+  }
+}
+
+@keyframes victory-embers-drift {
+  from {
+    transform: translateY(8px);
+    opacity: 0.65;
+  }
+  to {
+    transform: translateY(-18px);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .victory-art {
+    object-position: center 22%;
+  }
+
+  .victory-copy {
+    padding: 20px 16px 28px;
+  }
+}

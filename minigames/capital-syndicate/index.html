@@ -91,11 +91,27 @@
         <button id="btn-restart" class="btn primary">Relaunch</button>
       </section>
 
-      <section id="victory-screen" class="overlay hidden">
-        <p class="eyebrow">MISSION COMPLETE</p>
-        <h2>Cargo Delivered</h2>
-        <p class="tagline">All four sectors cleared · Score <strong id="victory-score">0</strong></p>
-        <button id="btn-victory-restart" class="btn primary">Play Again</button>
+      <section id="victory-screen" class="overlay victory-overlay hidden">
+        <div class="victory-stage" aria-hidden="true">
+          <img
+            class="victory-art"
+            src="assets/victory/zlisto-cheer.png"
+            alt=""
+            width="1024"
+            height="1536"
+          />
+          <div class="victory-blast"></div>
+          <div class="victory-shock"></div>
+          <div class="victory-embers"></div>
+        </div>
+        <div class="victory-copy">
+          <p class="eyebrow victory-brand">CAPITAL SYNDICATE</p>
+          <h2>Mission Complete</h2>
+          <p class="tagline">
+            Agent Zlisto clears the blockade · Score <strong id="victory-score">0</strong>
+          </p>
+          <button id="btn-victory-restart" class="btn primary">Play Again</button>
+        </div>
       </section>
 
       <section id="levelclear-screen" class="overlay toast hidden">
