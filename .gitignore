@@ -1,0 +1,25 @@
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+.env.*
+!.env.example
+
+# Agent / media outputs (keep grading JSON + slides; omit heavy binaries)
+audio/
+output/
+*.mp4
+!assets/**/*.mp4
+!minigames/**/*.mp4
+!ai_grading/**
+.netlify/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log
+.playwright/

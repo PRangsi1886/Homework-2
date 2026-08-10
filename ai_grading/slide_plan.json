@@ -1,0 +1,73 @@
+{
+  "model": "gpt-5.6-luna",
+  "project_title": "Capital Syndicate — Operation Ferrum Wings",
+  "slides": [
+    {
+      "id": 1,
+      "title": "A Game Demo That Doesn’t Just Sit There",
+      "description": "Vertical title-card opener built entirely in HTML/CSS/SVG: black space background, red-orange warning grid, a stylized chrome winged interceptor drawn with SVG polygons, and animated HUD scanlines. On-screen text: “CAPITAL SYNDICATE” / “OPERATION FERRUM WINGS” / “A playable browser shooter + a reel generated from one proposal.” Add a small browser-window frame and a pulsing “PLAY IN BROWSER” indicator. No stock imagery.",
+      "narration": "Most student game demos are silent screen recordings. Operation Ferrum Wings turns the project into a playable story hook—and a shareable reel.",
+      "visual_style": "Cinematic arcade title card; dark navy/black, chrome gray, hazard red, electric cyan; rich SVG spacecraft and HUD motion."
+    },
+    {
+      "id": 2,
+      "title": "Briefing: Agent Zlisto, Princess Lisa",
+      "description": "Use a two-panel cutscene-style composition: left panel shows an SVG portrait silhouette of Agent Zlisto with visor highlights; right panel shows Princess Lisa as a holographic transmission inside a circular signal frame. Between them, a red “ACT 1 / INCOMING TRANSMISSION” label and a thin route line leading toward a sector map. On-screen text: “THE STAKES START BEFORE THE FIRST SHOT.” Include a subtle audio-waveform graphic to signal ducked music and dialogue.",
+      "narration": "Before combat, Agent Zlisto receives a transmission from Princess Lisa. The intro cutscene establishes the mission, so players know what they’re fighting for.",
+      "visual_style": "Graphic-novel briefing screen with SVG character silhouettes, hologram rings, transmission noise, and restrained motion."
+    },
+    {
+      "id": 3,
+      "title": "Four Sectors. One Ruthless Flight Plan.",
+      "description": "Rich HTML/CSS/SVG infographic gameplay slide. Center: a vertical four-sector route map with nodes labeled “SECTOR 01” through “SECTOR 04,” ending in a boss icon. Around it, animate three linked mechanic callouts: “RAM” with an impact-chevron SVG, “AMMO ECONOMY” with segmented ammo cells, and “SELF-DESTRUCT” with a countdown ring. A fourth callout shows “SUPER-LASER CHARGE” as a horizontal charge meter. Add a miniature Canvas-style top-scrolling playfield behind the map: enemy formations, projectiles, player ship, and collectible/charge markers. On-screen headline: “EVERY HIT IS A DECISION.”",
+      "narration": "You fly through four sectors using ramming, ammo management, and a strategic self-destruct. Survive long enough to charge the super-laser and face the bosses.",
+      "visual_style": "Dense arcade systems infographic made with HTML/CSS/SVG; animated meters, route lines, icons, and a miniature top-scrolling combat field—not plain text or a tiny icon."
+    },
+    {
+      "id": 4,
+      "title": "Juice You Can Hear",
+      "description": "Show a split-screen browser game mockup: left is the combat HUD with weapon labels, ammo, boss health, explosions, and screen-shake streaks; right is an audio production diagram. Draw SVG waveform strips labeled “BGM,” “WEAPON SFX,” and “CUTSCENE VOICE,” with the BGM waveform visibly dipping beneath a highlighted voice segment. Overlay small badges: “LOOPING BGM,” “PER-WEAPON SFX,” “DUCKED MUSIC.” Use animated muzzle flashes and hit sparks rendered as CSS/SVG shapes.",
+      "narration": "The polish is audiovisual too: looping music, distinct weapon sounds, impact effects, and ducked BGM during cutscenes make the browser prototype feel like a real arcade act.",
+      "visual_style": "Fast split-screen HUD and audio infographic; neon cyan, amber, and red accents; all visuals drawn as interface graphics and SVG effects."
+    },
+    {
+      "id": 5,
+      "title": "From One Brief to a Playable Reel",
+      "description": "End on a clean CTA poster framed like a browser launch screen. Large central button: “PLAY ACT 1 IN BROWSER.” Beneath it: “No install” and “Public link + README.” A side pipeline diagram connects proposal → reel_agent.py → structured slides → tts-1-hd narration → ai_grading/ artifacts → reel.mp4. Add a small completion checklist: “Playable URL,” “30–60s MP4,” “Mechanics + narrative,” “Generative pipeline.” Footer: “Capital Syndicate — Operation Ferrum Wings / Poom Rangsi.”",
+      "narration": "One proposal powers the playable demo and the production pipeline: structured slides, critique, TTS, and a finished reel. Click through, play Act 1, and see the full system in motion.",
+      "visual_style": "High-contrast CTA poster with browser-window framing, pipeline arrows, checklist badges, and a bright launch button; concise portfolio-ready finish."
+    }
+  ],
+  "slides_revised_for_reel": [
+    {
+      "id": 1,
+      "title": "A Game Demo That Doesn’t Just Sit There",
+      "description": "Vertical HTML/CSS/SVG title-card opener for a browser-playable arcade shooter. A black/navy space field and restrained red warning grid frame a chrome winged interceptor as it snaps into a cyan HUD lock-on. The browser window is large enough to read as playable, with a bold pulsing badge: “PLAY IN BROWSER.” Text hierarchy: small red “CAPITAL SYNDICATE,” dominant “OPERATION FERRUM WINGS,” and one concise subline: “A browser shooter with a story hook.” Use scanlines and grid motion sparingly so the ship reveal and CTA own the attention. No stock imagery.",
+      "narration": "This isn’t a screen recording. It’s a playable browser shooter—with a story hook built in. Tap in: Operation Ferrum Wings."
+    },
+    {
+      "id": 2,
+      "title": "Briefing: Agent Zlisto, Princess Lisa",
+      "description": "Create a vertical graphic-novel briefing screen with a clean two-panel split. On the left, Agent Zlisto appears as a dark tactical silhouette, defined by a single glowing cyan visor notch and subtle targeting data. On the right, Princess Lisa appears as a magenta-cyan holographic transmission inside three restrained signal rings, with light scan breakup at the edges. Place a compact red badge in the negative space between panels: “ACT 1 / INCOMING.” Run one thin red route line from Zlisto’s visor through the badge and into a bright target point on the sector map below Lisa. Use the headline as the emotional payoff near the bottom: “THE STAKES START / BEFORE THE FIRST SHOT.” Add a small, low-contrast “AUDIO LINK ACTIVE” waveform beneath the map; animate only the hologram flicker, route pulse, and waveform during dialogue. Keep the grid, scanlines, and metadata dim so the faces, route, and headline carry the frame.",
+      "narration": "Before the first shot, Zlisto receives a transmission from Princess Lisa. Her warning turns the mission into something personal—and gives the fight a reason."
+    },
+    {
+      "id": 3,
+      "title": "Four Sectors. One Ruthless Flight Plan.",
+      "description": "Vertical 1080×1920 arcade strategy infographic with a clear three-beat hierarchy. Top: the dominant headline “FOUR SECTORS. ONE RUTHLESS FLIGHT PLAN.” and a small kicker, “EVERY HIT IS A DECISION.” Center: a tall, glowing route spine labeled SECTOR 01, 02, 03, and 04, ending at a restrained boss silhouette. Each node activates in sequence and connects to one compact mechanic card: 01 RAM with an impact-chevron, 02 AMMO with three remaining cells, 03 SELF-DESTRUCT with a countdown ring, and 04 SUPER-LASER with a filling charge bar. A narrow animated combat-feed strip sits behind or above the route, showing enemy formations, incoming shots, the player ship, and charge pickups without competing with the route. Use cyan for route progress, amber for ammo/danger, pink for self-destruct and boss threat, and lime only for laser readiness. Animate the route from 01 to 04 over roughly 12–14 seconds, changing one meter at each node, then flash the fully charged super-laser and reveal the boss endpoint. Keep typography and key labels large enough for mobile viewing; minimize secondary telemetry and simultaneous glow effects.",
+      "narration": "Four sectors. Every hit is a choice: ram, conserve ammo, or self-destruct. Charge the super-laser—and reach the boss."
+    },
+    {
+      "id": 4,
+      "title": "Juice You Can Hear",
+      "description": "Create a vertical split-screen proof of audiovisual juice. On the left, show a simplified neon combat HUD: one labeled weapon, ammo count, boss health bar, a large muzzle flash, and a hit-spark burst with a brief screen-shake streak. On the right, show three aligned SVG waveform lanes labeled “BGM,” “WEAPON SFX,” and “CUTSCENE VOICE.” Animate a playhead from the weapon hit into the SFX lane, then across an amber-highlighted voice segment while the BGM waveform visibly drops to low amplitude. Use three compact callouts—“LOOP,” “PER-WEAPON,” and “DUCK”—anchored to the relevant lanes. Add a subtle GAMEPLAY → MIX connector between panels so the cause-and-effect relationship reads instantly. Keep the palette neon cyan with amber for voice/focus and red for danger; use CSS/SVG effects only, with the audio ducking as the main visual payoff.",
+      "narration": "Every hit has a sound: looping BGM, weapon-specific SFX, and music that ducks for voice. That’s what makes this browser prototype feel arcade-real."
+    },
+    {
+      "id": 5,
+      "title": "From One Brief to a Playable Reel",
+      "description": "Close with a high-contrast browser launch screen. Make “PLAY ACT 1 IN BROWSER” the dominant focal point, supported by a compact “LIVE DEMO / ACT 1 READY” status label and the promise “No install · Public link + README.” Beneath the browser, show one readable pipeline strip: Brief → Agent → Slides → Voice → Grade → Reel, with small metadata labels for reel_agent.py, tts-1-hd, ai_grading/, and reel.mp4. Finish with four compact proof chips: “Playable URL,” “30–60s MP4,” “Mechanics + story,” and “Generative pipeline.” Keep the footer as a restrained signature: “Capital Syndicate — Operation Ferrum Wings / Poom Rangsi.” Use the neon cyan/lime button as the brightest element, cyan connector lines for the pipeline, and pink only for the title accent.",
+      "narration": "One brief becomes a playable Act 1—slides, voice, grading, and a finished reel. Open the public link and watch the full pipeline run."
+    }
+  ]
+}

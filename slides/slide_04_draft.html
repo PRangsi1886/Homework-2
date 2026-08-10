@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slide 4 — Juice You Can Hear</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+  :root{--bg:#070b13;--panel:#0c1421;--cyan:#2ff3ff;--amber:#ffbd45;--red:#ff4d61;--white:#f3f8ff;--muted:#8aa2ba;}
+  *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;background:#050810;color:var(--white);overflow:hidden}
+  body{font-family:'Barlow Condensed',Arial,sans-serif;display:flex;align-items:center;justify-content:center}
+  .slide{position:relative;width:100vw;height:100vh;max-width:1080px;max-height:1920px;min-width:540px;min-height:960px;overflow:hidden;background:
+    radial-gradient(ellipse at 14% 15%,rgba(0,223,255,.16),transparent 31%),
+    radial-gradient(ellipse at 88% 75%,rgba(255,33,106,.13),transparent 30%),
+    linear-gradient(152deg,#08111d 0%,#050811 55%,#0b0911 100%)}
+  .slide:before{content:"";position:absolute;inset:0;opacity:.18;background-image:linear-gradient(rgba(81,138,167,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(81,138,167,.22) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+  .scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.18;filter:blur(1px);animation:scan 6s linear infinite}
+  @keyframes scan{from{top:-5%}to{top:105%}}
+  header{position:relative;padding:74px 70px 30px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid rgba(47,243,255,.2)}
+  .kicker{font-family:'Space Mono',monospace;font-size:21px;letter-spacing:4px;color:var(--cyan);font-weight:700}.kicker span{color:var(--amber)}
+  h1{font-size:78px;line-height:.86;margin:12px 0 0;text-transform:uppercase;letter-spacing:-1px;font-weight:900;text-shadow:4px 4px 0 rgba(255,45,112,.22)}
+  .stamp{font-family:'Space Mono',monospace;color:var(--amber);font-size:17px;letter-spacing:2px;border:1px solid rgba(255,189,69,.7);padding:11px 15px;transform:skew(-8deg);white-space:nowrap}
+  .split{position:relative;margin:34px 54px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px;min-height:1120px}
+  .panel{position:relative;border:1px solid rgba(112,195,222,.45);background:linear-gradient(145deg,rgba(15,31,47,.92),rgba(5,10,18,.96));overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 0 35px rgba(0,210,255,.07)}
+  .panel:after{content:"";position:absolute;inset:10px;border:1px solid rgba(255,255,255,.06);pointer-events:none}
+  .panel-head{height:78px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(9,21,32,.9);border-bottom:1px solid rgba(47,243,255,.28);font-family:'Space Mono',monospace;font-size:17px;letter-spacing:2px;color:var(--cyan)}
+  .panel-head b{font-size:14px;color:#708da7}.live{display:flex;gap:8px;align-items:center;color:var(--red)!important}.live i{width:10px;height:10px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red);animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.35}}
+  /* combat HUD */
+  .battle{height:1042px;position:relative;background:radial-gradient(ellipse at 50% 32%,rgba(28,74,93,.28),transparent 44%),linear-gradient(180deg,rgba(0,9,18,.1),rgba(0,0,0,.55))}
+  .battle:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(168deg,transparent 0 74px,rgba(47,243,255,.08) 75px 77px,transparent 78px 150px);transform:skewY(-9deg);opacity:.55}
+  .hudtop{position:relative;padding:25px 24px 0;font-family:'Space Mono',monospace;font-size:15px;color:#a9c3d6;z-index:2}.hudtop strong{color:var(--white);font-size:20px}.bossbar{height:16px;border:1px solid var(--red);margin-top:9px;background:#2b101c;box-shadow:0 0 14px rgba(255,77,97,.2)}.bossbar div{height:100%;width:66%;background:linear-gradient(90deg,var(--red),#ff925b);box-shadow:0 0 13px var(--red)}
+  .ship{position:absolute;left:50%;bottom:170px;width:95px;height:125px;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 0 15px var(--cyan));animation:shipshake .22s infinite alternate}@keyframes shipshake{to{transform:translateX(calc(-50% + 3px)) translateY(-3px)}}
+  .ship:before{content:"";position:absolute;left:25px;top:0;border-left:23px solid transparent;border-right:23px solid transparent;border-bottom:76px solid var(--cyan);filter:drop-shadow(0 0 5px white)}.ship:after{content:"";position:absolute;left:9px;top:65px;width:75px;height:34px;background:linear-gradient(90deg,transparent 0 8%,#ff5d55 9% 24%,var(--cyan) 25% 75%,#ff5d55 76% 91%,transparent 92%);clip-path:polygon(0 100%,20% 0,80% 0,100% 100%,66% 70%,34% 70%)}
+  .enemy{position:absolute;top:288px;left:52%;width:104px;height:50px;background:var(--red);clip-path:polygon(0 44%,24% 44%,36% 0,64% 0,76% 44%,100% 44%,76% 100%,24% 100%);box-shadow:0 0 24px var(--red);animation:enemy 2.2s ease-in-out infinite}@keyframes enemy{50%{transform:translateX(-46px)}}
+  .flash{position:absolute;width:70px;height:70px;background:var(--amber);clip-path:polygon(50% 0,62% 35%,100% 25%,70% 52%,88% 100%,50% 70%,12% 100%,30% 52%,0 25%,38% 35%);filter:drop-shadow(0 0 16px var(--amber));animation:flash .9s ease-out infinite;z-index:4}.f1{left:28%;top:415px}.f2{right:13%;top:525px;animation-delay:.34s;transform:scale(.65)}@keyframes flash{0%,100%{opacity:0;transform:scale(.25) rotate(0)}25%{opacity:1}70%{opacity:.2;transform:scale(1.2) rotate(24deg)}}
+  .spark{position:absolute;width:130px;height:3px;background:linear-gradient(90deg,var(--amber),transparent);transform:rotate(-32deg);filter:drop-shadow(0 0 6px var(--amber));animation:streak 1.3s linear infinite}.s1{top:475px;left:4%}.s2{top:570px;right:1%;transform:rotate(145deg);animation-delay:.4s}@keyframes streak{0%{opacity:0;transform:translate(20px,-18px) rotate(-32deg)}30%,70%{opacity:1}100%{opacity:0;transform:translate(-80px,70px) rotate(-32deg)}}
+  .weapon{position:absolute;left:22px;bottom:55px;right:22px;border-top:1px solid rgba(47,243,255,.35);padding-top:14px;font-family:'Space Mono',monospace;font-size:15px;z-index:5}.weapon b{display:block;color:var(--amber);font-size:22px;margin-bottom:7px}.ammo{display:flex;gap:6px}.ammo i{width:18px;height:11px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}.ammo i:nth-last-child(-n+3){background:#274759;box-shadow:none}.score{position:absolute;right:24px;bottom:58px;text-align:right;color:var(--muted);font-family:'Space Mono',monospace;font-size:13px}.score strong{display:block;color:var(--white);font-size:23px}
+  /* audio */
+  .audio{padding-bottom:28px}.audio-body{padding:35px 25px;position:relative}.route{font-family:'Space Mono',monospace;font-size:14px;line-height:1.5;color:var(--muted);margin-bottom:36px}.route b{color:var(--white)}.node{display:inline-block;color:var(--cyan);border:1px solid rgba(47,243,255,.5);padding:6px 9px;margin-right:4px}.arrow{color:var(--amber);font-size:21px;margin:0 4px}
+  .wave-row{margin:30px 0 44px;position:relative}.wave-label{font-family:'Space Mono',monospace;font-size:18px;font-weight:bold;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.wave-label small{font-size:12px;color:var(--muted);font-weight:400}.wavebox{height:100px;position:relative;background:rgba(0,0,0,.28);border:1px solid rgba(138,162,186,.25);overflow:hidden}.wavebox:before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(138,162,186,.2)}svg.wave{width:100%;height:100%;display:block}.voice-highlight{position:absolute;left:47%;width:37%;top:-1px;bottom:-1px;background:rgba(255,189,69,.11);border-left:2px solid var(--amber);border-right:2px solid var(--amber);box-shadow:0 0 22px rgba(255,189,69,.18)}.voice-highlight span{position:absolute;top:-28px;left:8px;color:var(--amber);font-family:'Space Mono';font-size:11px;white-space:nowrap}.duck-note{position:absolute;left:48%;top:244px;font-family:'Space Mono',monospace;color:var(--amber);font-size:12px;transform:rotate(-7deg)}.duck-note:before{content:"↘";font-size:29px;margin-right:4px}.badge-row{display:flex;flex-direction:column;gap:13px;margin-top:55px}.badge{font-family:'Space Mono',monospace;font-size:14px;letter-spacing:1px;padding:12px 14px;border-left:4px solid var(--cyan);background:linear-gradient(90deg,rgba(47,243,255,.14),transparent);color:var(--white)}.badge:nth-child(2){border-color:var(--amber);background:linear-gradient(90deg,rgba(255,189,69,.14),transparent)}.badge:nth-child(3){border-color:var(--red);background:linear-gradient(90deg,rgba(255,77,97,.15),transparent)}
+  .caption{position:relative;margin:33px 70px 0;padding:28px 30px 28px 34px;border-left:5px solid var(--cyan);background:rgba(11,24,38,.78);font-size:35px;line-height:1.05;font-weight:600;letter-spacing:.2px}.caption em{color:var(--cyan);font-style:normal}.caption:after{content:"AUDIO / IMPACT / PRESENCE";position:absolute;right:18px;bottom:-24px;font-family:'Space Mono';font-size:12px;color:var(--muted);letter-spacing:2px}
+  footer{position:absolute;bottom:28px;left:70px;right:70px;display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:13px;color:#668095;letter-spacing:2px}.page{color:var(--amber)}
+</style>
+</head>
+<body>
+<main class="slide">
+  <div class="scan"></div>
+  <header><div><div class="kicker">CAPITAL SYNDICATE <span>// ACT 01</span></div><h1>JUICE YOU<br>CAN HEAR</h1></div><div class="stamp">FERRUM WINGS / 04</div></header>
+  <section class="split">
+    <div class="panel"><div class="panel-head"><span>COMBAT FEED / SECTOR 03</span><span class="live"><i></i>LIVE</span></div><div class="battle">
+      <div class="hudtop"><div><strong>BOSS // IRON WARDEN</strong><br><span>HULL INTEGRITY 66%</span></div><div class="bossbar"><div></div></div></div>
+      <div class="enemy"></div><div class="flash f1"></div><div class="flash f2"></div><div class="spark s1"></div><div class="spark s2"></div>
+      <div class="ship"></div>
+      <div class="weapon"><b>◈ PLASMA RAM // ACTIVE</b><span>AMMO</span><div class="ammo"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="score">CHAIN<br><strong>× 08</strong></div>
+    </div></div>
+    <div class="panel audio"><div class="panel-head"><span>AUDIO SIGNAL ROUTER</span><span style="color:var(--amber)">SYNC 120 BPM</span></div><div class="audio-body">
+      <div class="route"><span class="node">EVENT</span><span class="arrow">→</span><span class="node">MIX BUS</span><span class="arrow">→</span><span class="node">PLAYER</span><br><b>REAL-TIME FEEDBACK / NO SILENT MOMENTS</b></div>
+      <div class="wave-row"><div class="wave-label"><span style="color:var(--cyan)">BGM</span><small>LOOP / FULL MIX</small></div><div class="wavebox"><div class="voice-highlight"><span>VOICE CUTSCENE</span></div><svg class="wave" viewBox="0 0 500 100" preserveAspectRatio="none"><path d="M0 50 L15 48 L25 38 L34 63 L44 25 L55 77 L65 45 L76 55 L86 18 L96 81 L110 47 L122 53 L134 34 L145 69 L157 43 L168 58 L180 21 L192 80 L205 48 L217 52 L228 32 L239 70 L251 42 L262 61 L273 28 L285 74 L297 48 L309 52 L321 37 L333 67 L345 44 L357 58 L369 23 L381 78 L394 47 L407 53 L420 34 L433 68 L445 42 L458 59 L470 31 L485 73 L500 50" fill="none" stroke="#2ff3ff" stroke-width="3" vector-effect="non-scaling-stroke"/></svg></div></div>
+      <div class="wave-row"><div class="wave-label"><span style="color:var(--amber)">WEAPON SFX</span><small>EVENT-DRIVEN / DISTINCT</small></div><div class="wavebox"><svg class="wave" viewBox="0 0 500 100" preserveAspectRatio="none"><path d="M0 50 L115 50 L121 47 L125 50 L129 12 L133 89 L138 50 L198 50 L204 38 L210 63 L214 50 L274 50 L280 8 L285 92 L290 50 L355 50 L361 43 L367 58 L373 50 L430 50 L436 20 L441 80 L446 50 L500 50" fill="none" stroke="#ffbd45" stroke-width="4" vector-effect="non-scaling-stroke"/></svg></div></div>
+      <div class="wave-row"><div class="wave-label"><span style="color:var(--red)">CUTSCENE VOICE</span><small>DUCKING ACTIVE</small></div><div class="wavebox"><svg class="wave" viewBox="0 0 500 100" preserveAspectRatio="none"><path d="M0 50 L18 50 L25 35 L32 65 L42 44 L54 57 L66 26 L76 76 L88 39 L100 62 L113 50 L128 50 L140 18 L151 82 L160 43 L171 57 L183 34 L194 66 L208 50 L224 50 L235 25 L245 75 L257 41 L270 59 L284 33 L295 68 L309 50 L500 50" fill="none" stroke="#ff4d61" stroke-width="3" vector-effect="non-scaling-stroke"/></svg></div></div>
+      <div class="duck-note">MUSIC DUCKS UNDER DIALOGUE</div>
+      <div class="badge-row"><div class="badge">◉ &nbsp;LOOPING BGM</div><div class="badge">⚡ &nbsp;PER-WEAPON SFX</div><div class="badge">◒ &nbsp;DUCKED MUSIC</div></div>
+    </div></div>
+  </section>
+  <div class="caption">Every hit has a voice: <em>music, weapon tone, impact FX</em>—then silence makes the story land.</div>
+  <footer><span>VANILLA HTML / CSS / CANVAS</span><span class="page">SLIDE 04 — AUDIO IDENTITY</span></footer>
+</main>
+</body>
+</html>
