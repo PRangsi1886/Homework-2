@@ -1,6 +1,8 @@
 # Mini-game: Capital Syndicate — Operation Ferrum Wings
 
-Drop-in browser mini-game for **Board of Realities**.
+Drop-in browser mini-game for the **Board of Realities** collab.
+
+This folder is the packaged game under `minigames/capital-syndicate/`.
 
 ## Play standalone
 
@@ -11,7 +13,7 @@ python3 -m http.server 8080
 ```
 
 Packaged demo:
-https://raw.githack.com/PRangsi1886/Homework-2/main/minigames/capital-syndicate/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/main/minigames/capital-syndicate/index.html
 
 ## Integrate into Board of Realities
 

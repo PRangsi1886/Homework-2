@@ -6,7 +6,7 @@
 import { W, H } from "./entities.js";
 
 /** Bump to force CDN / browser cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-vo-4";
+const OPENING_ASSET_VER = "opening-vo-5";
 /** Pin CDN assets to a known-good commit once VO lands on main. */
 const OPENING_CDN_REF = "5ddd357caa7940806062aee843295d715ebd524e";
 
@@ -343,14 +343,15 @@ export class ImageSequenceCutscene {
     }
   }
 
-  drawCover(ctx, img, kenBurns = 0) {
+  drawCover(ctx, img) {
     if (!img) return;
     const { w, h } = this;
-    const scale = Math.max(w / img.width, h / img.height) * (1.04 + kenBurns * 0.06);
+    // Static cover fit — no Ken Burns zoom/pan during opening beats.
+    const scale = Math.max(w / img.width, h / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (w - dw) / 2;
-    const dy = (h - dh) / 2 - kenBurns * 12;
+    const dy = (h - dh) / 2;
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
@@ -410,13 +411,12 @@ export class ImageSequenceCutscene {
 
     const beat = this.currentBeat();
     const next = this.nextBeat();
-    const ken = Math.min(1, this.beatTime / Math.max(0.01, beat?.hold || 3));
 
-    if (beat?.img) this.drawCover(ctx, beat.img, ken);
+    if (beat?.img) this.drawCover(ctx, beat.img);
 
     if (this.cross > 0 && next?.img) {
       ctx.globalAlpha = this.cross;
-      this.drawCover(ctx, next.img, 0);
+      this.drawCover(ctx, next.img);
       ctx.globalAlpha = 1;
     }
 

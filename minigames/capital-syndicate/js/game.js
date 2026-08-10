@@ -326,6 +326,14 @@ export class Game {
     this.ui.victoryScore.textContent = String(this.score);
     this.showScreen("victory");
     this.audio.setMusic("victory");
+    this.audio.explosion(true);
+    // Keep a little combat juice under the overlay while Zlisto cheers.
+    spawnExplosion(this.particles, W * 0.5, H * 0.32, { big: true });
+    spawnExplosion(this.particles, W * 0.5 + 70, H * 0.32 + 40, { big: false });
+    spawnExplosion(this.particles, W * 0.5 - 90, H * 0.32 + 20, { big: false });
+    addTrauma(this.juice, 0.28);
+    impactFlash(this.juice, "rgba(255,160,60,0.2)", 0.2, 0.45);
+    this.flashMessage("AGENT ZLISTO — VICTORY", 1.6);
   }
 
   skipCutscene() {
