@@ -302,7 +302,7 @@ export class Game {
   beginIntroCutscene() {
     // Keep BGM under the intro video at 35% so dialogue/SFX can cut through.
     this.audio.setMusic("cutscene");
-    this.audio.setMusicDuck(0.35);
+    this.audio.setMusicDuck(0.22); // keep BGM under opening VO
     this.cutscene = createIntroCutscene(() => this.beginGameplay());
     this.cutsceneStartedAt = performance.now();
     this.state = STATES.CUTSCENE;

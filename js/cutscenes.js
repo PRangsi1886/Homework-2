@@ -1,45 +1,64 @@
 /**
  * Intro cinematic cutscene + thin factories for game.js hooks.
- * Primary intro: image-sequence opening (Agent Zlisto / Princess Lisa story).
- * Fallback: stitched opening video (same 5 beats) if stills fail to load.
+ * Primary intro: image-sequence opening with voice-over + subtitles.
+ * Fallback: stitched opening video (same beats + baked VO audio).
  */
 import { W, H } from "./entities.js";
 
-/** Bump to force CDN cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-cinematic-3b";
-/** Pin CDN assets to a commit — @main stays stale on jsDelivr for days. */
+/** Bump to force CDN / browser cache refresh of opening assets. */
+const OPENING_ASSET_VER = "opening-vo-1";
+/** Pin CDN assets to a known-good commit once VO lands on main. */
 const OPENING_CDN_REF = "c41e76319d95d5a17f76ecec8c042617068782f8";
 
 const OPENING_BEATS = [
   {
     file: "01-briefing.jpg",
-    caption: "Welcome to Capital Syndicate: Operation Ferrum Wings — Agent Zlisto.",
-    hold: 3.4,
+    voice: "01-briefing.mp3",
+    speaker: "COMMAND",
+    caption:
+      "Welcome to Capital Syndicate: Operation Ferrum Wings. Agent Zlisto — this briefing is for you.",
+    hold: 9.05,
+    voiceDuration: 8.304,
   },
   {
     file: "02-legacy-base.jpg",
-    caption: "We got some urgent work to do… and only you can finish it.",
-    hold: 3.2,
+    voice: "02-legacy-base.mp3",
+    speaker: "COMMAND",
+    caption: "We've got urgent work to do… and only you can finish it.",
+    hold: 5.17,
+    voiceDuration: 4.416,
   },
   {
     file: "03-lisa-captured.jpg",
-    caption: "Princess Lisa has been captured — only you can save her and the world.",
-    hold: 3.6,
+    voice: "03-lisa-captured.mp3",
+    speaker: "COMMAND",
+    caption:
+      "Princess Lisa has been captured. Only you can save her — and the world.",
+    hold: 7.25,
+    voiceDuration: 6.504,
   },
   {
     file: "04-board-fighter.jpg",
-    caption: "Zlisto: Leave it to me. I got this.",
+    voice: "04-board-fighter.mp3",
+    speaker: "ZLISTO",
+    caption: "Leave it to me. I got this.",
     hold: 3.0,
+    voiceDuration: 1.848,
   },
   {
     file: "05-launch.jpg",
+    voice: "05-launch.mp3",
+    speaker: "OPS",
     caption: "All systems ready. Prepare for takeoff.",
-    hold: 3.2,
+    hold: 5.07,
+    voiceDuration: 4.32,
   },
 ];
 
 const OPENING_LOCAL_DIR = "assets/cutscenes/opening/";
+const OPENING_VO_LOCAL_DIR = "assets/cutscenes/opening/vo/";
 const OPENING_CDN_BASE = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@${OPENING_CDN_REF}/assets/cutscenes/opening/`;
+const OPENING_VO_CDN_BASE = `https://cdn.jsdelivr.net/gh/PRangsi1886/Homework-2@${OPENING_CDN_REF}/assets/cutscenes/opening/vo/`;
 
 function isCdnHost(host) {
   return (
@@ -52,13 +71,15 @@ function isCdnHost(host) {
 
 function openingBeats() {
   const host = typeof location !== "undefined" ? location.hostname : "";
-  // Prefer jsDelivr on mirror hosts; large binaries often fail on githack.
+  // Small JPG/MP3 assets load reliably as same-origin relatives on rawcdn.
+  // Absolute CDN is a fallback when the host historically mishandles binaries.
   const useCdn = isCdnHost(host);
   return OPENING_BEATS.map((b) => ({
     ...b,
-    src: useCdn
-      ? `${OPENING_CDN_BASE}${b.file}?v=${OPENING_ASSET_VER}`
-      : `${OPENING_LOCAL_DIR}${b.file}?v=${OPENING_ASSET_VER}`,
+    src: `${OPENING_LOCAL_DIR}${b.file}?v=${OPENING_ASSET_VER}`,
+    srcFallback: useCdn ? `${OPENING_CDN_BASE}${b.file}?v=${OPENING_ASSET_VER}` : null,
+    voiceSrc: `${OPENING_VO_LOCAL_DIR}${b.voice}?v=${OPENING_ASSET_VER}`,
+    voiceFallback: useCdn ? `${OPENING_VO_CDN_BASE}${b.voice}?v=${OPENING_ASSET_VER}` : null,
   }));
 }
 
@@ -73,22 +94,104 @@ function introVideoSources() {
   return [INTRO_VIDEO_LOCAL, INTRO_VIDEO_CDN];
 }
 
-function loadImage(src) {
+function loadImage(src, fallback = null) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.decoding = "async";
-    try {
-      const abs = new URL(src, typeof location !== "undefined" ? location.href : undefined);
-      if (typeof location !== "undefined" && abs.origin !== location.origin) {
-        img.crossOrigin = "anonymous";
+    const tryLoad = (url, allowFallback) => {
+      const img = new Image();
+      img.decoding = "async";
+      try {
+        const abs = new URL(url, typeof location !== "undefined" ? location.href : undefined);
+        if (typeof location !== "undefined" && abs.origin !== location.origin) {
+          img.crossOrigin = "anonymous";
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load ${src}`));
-    img.src = src;
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        if (allowFallback && fallback) tryLoad(fallback, false);
+        else reject(new Error(`Failed to load ${src}`));
+      };
+      img.src = url;
+    };
+    tryLoad(src, true);
   });
+}
+
+function preferredVoiceVolume() {
+  try {
+    if (localStorage.getItem("ferrum-wing-muted") === "1") return 0;
+    const raw = Number(localStorage.getItem("ferrum-wing-volume"));
+    if (Number.isFinite(raw)) return Math.max(0, Math.min(1, raw));
+  } catch {
+    /* ignore */
+  }
+  return 0.85;
+}
+
+function loadVoice(src, fallback = null) {
+  return new Promise((resolve) => {
+    const tryLoad = (url, allowFallback) => {
+      const audio = new Audio();
+      audio.preload = "auto";
+      try {
+        const abs = new URL(url, typeof location !== "undefined" ? location.href : undefined);
+        if (typeof location !== "undefined" && abs.origin !== location.origin) {
+          audio.crossOrigin = "anonymous";
+        }
+      } catch {
+        /* ignore */
+      }
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (ok) resolve(audio);
+        else if (allowFallback && fallback) tryLoad(fallback, false);
+        else resolve(null);
+      };
+      audio.addEventListener("canplaythrough", () => done(true), { once: true });
+      audio.addEventListener("loadeddata", () => done(true), { once: true });
+      audio.addEventListener("error", () => done(false), { once: true });
+      audio.src = url;
+      try {
+        audio.load();
+      } catch {
+        done(false);
+      }
+      setTimeout(() => done(audio.readyState >= 2), 4000);
+    };
+    tryLoad(src, true);
+  });
+}
+
+function wrapText(ctx, text, maxW) {
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = word;
+    } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * Reveal subtitle words roughly in sync with voice duration.
+ */
+function revealedCaption(full, beatTime, voiceDuration) {
+  const text = String(full || "");
+  if (!text) return "";
+  const dur = Math.max(0.8, voiceDuration || 3);
+  // Finish revealing a bit before VO ends so the last words aren't rushed.
+  const t = Math.min(1, beatTime / (dur * 0.92));
+  const words = text.split(/\s+/);
+  const count = Math.max(1, Math.ceil(words.length * t));
+  return words.slice(0, count).join(" ");
 }
 
 /**
@@ -110,7 +213,8 @@ export class ImageSequenceCutscene {
     this.ready = false;
     this.failed = false;
     this._finishing = false;
-    this.beats = (beats || openingBeats()).map((b) => ({ ...b, img: null }));
+    this._voiceIndex = -1;
+    this.beats = (beats || openingBeats()).map((b) => ({ ...b, img: null, audio: null }));
     this.transition = 0.45;
 
     void this.preload();
@@ -118,10 +222,20 @@ export class ImageSequenceCutscene {
 
   async preload() {
     try {
-      // Load sequentially-friendly: all in parallel but small JPGs.
-      const images = await Promise.all(this.beats.map((b) => loadImage(b.src)));
+      const images = await Promise.all(
+        this.beats.map((b) => loadImage(b.src, b.srcFallback))
+      );
       images.forEach((img, i) => {
         this.beats[i].img = img;
+      });
+      // Voice is best-effort — stills still play if VO fails.
+      const voices = await Promise.all(
+        this.beats.map((b) =>
+          b.voiceSrc ? loadVoice(b.voiceSrc, b.voiceFallback) : Promise.resolve(null)
+        )
+      );
+      voices.forEach((audio, i) => {
+        this.beats[i].audio = audio;
       });
       this.ready = true;
       this.failed = false;
@@ -131,13 +245,45 @@ export class ImageSequenceCutscene {
     }
   }
 
+  stopVoice() {
+    for (const beat of this.beats) {
+      const a = beat.audio;
+      if (!a) continue;
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    this._voiceIndex = -1;
+  }
+
+  ensureVoice() {
+    if (this.done || this._finishing || !this.ready) return;
+    if (this._voiceIndex === this.beatIndex) return;
+    this.stopVoice();
+    this._voiceIndex = this.beatIndex;
+    const beat = this.currentBeat();
+    const audio = beat?.audio;
+    if (!audio) return;
+    const vol = preferredVoiceVolume();
+    audio.volume = vol;
+    audio.muted = vol <= 0.001;
+    void audio.play().catch(() => {
+      // Autoplay may require a prior unlock click — game already unlocks on start.
+    });
+  }
+
   fadeOutAndFinish() {
     if (this.done) return;
     this._finishing = true;
+    this.stopVoice();
   }
 
   skip() {
     if (this.done) return;
+    this.stopVoice();
     this.done = true;
     this.onDone?.();
   }
@@ -160,6 +306,7 @@ export class ImageSequenceCutscene {
 
     this.time += dt;
     this.beatTime += dt;
+    this.ensureVoice();
 
     if (this._finishing) {
       this.fade = Math.min(1, this.fade + dt / 0.55);
@@ -167,7 +314,6 @@ export class ImageSequenceCutscene {
       return;
     }
 
-    // Opening fade-in
     if (this.time < 0.5) this.fade = 1 - this.time / 0.5;
     else this.fade = Math.max(0, this.fade - dt * 2.2);
 
@@ -208,39 +354,42 @@ export class ImageSequenceCutscene {
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
-  drawCaption(ctx, text) {
+  drawSubtitle(ctx, speaker, text) {
     if (!text) return;
     const { w, h } = this;
     const padX = 28;
     const maxW = w - padX * 2;
+
     ctx.font = "600 18px Rajdhani, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-
-    const words = String(text).split(/\s+/);
-    const lines = [];
-    let line = "";
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line);
-        line = word;
-      } else line = test;
-    }
-    if (line) lines.push(line);
+    const lines = wrapText(ctx, text, maxW);
 
     const lineH = 26;
-    const boxH = lines.length * lineH + 22;
+    const speakerH = speaker ? 22 : 0;
+    const boxH = lines.length * lineH + 22 + speakerH;
     const boxY = h - 56 - boxH - 12;
-    ctx.fillStyle = "rgba(1, 3, 8, 0.72)";
+
+    ctx.fillStyle = "rgba(1, 3, 8, 0.78)";
     ctx.fillRect(18, boxY, w - 36, boxH);
-    ctx.strokeStyle = "rgba(232, 162, 74, 0.35)";
+    ctx.strokeStyle = "rgba(232, 162, 74, 0.4)";
     ctx.lineWidth = 1;
     ctx.strokeRect(18.5, boxY + 0.5, w - 37, boxH - 1);
 
-    ctx.fillStyle = "rgba(244, 246, 250, 0.95)";
+    let textY = boxY + 14;
+    if (speaker) {
+      ctx.font = "700 13px Orbitron, Rajdhani, sans-serif";
+      ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
+      ctx.textAlign = "left";
+      ctx.fillText(String(speaker).toUpperCase(), 34, textY + 8);
+      textY += speakerH;
+    }
+
+    ctx.font = "600 18px Rajdhani, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(244, 246, 250, 0.96)";
     lines.forEach((ln, i) => {
-      ctx.fillText(ln, w / 2, boxY + 14 + lineH / 2 + i * lineH);
+      ctx.fillText(ln, w / 2, textY + lineH / 2 + i * lineH);
     });
   }
 
@@ -275,8 +424,13 @@ export class ImageSequenceCutscene {
     ctx.fillRect(0, 0, w, 56);
     ctx.fillRect(0, h - 56, w, 56);
 
-    const caption = this.cross > 0.55 && next ? next.caption : beat?.caption;
-    this.drawCaption(ctx, caption);
+    const active = this.cross > 0.55 && next ? next : beat;
+    const fullCaption = active?.caption || "";
+    const shown =
+      active === beat
+        ? revealedCaption(fullCaption, this.beatTime, beat?.voiceDuration)
+        : fullCaption;
+    this.drawSubtitle(ctx, active?.speaker, shown);
 
     ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
     ctx.font = "700 13px Rajdhani, sans-serif";
@@ -313,6 +467,7 @@ export class ImageSequenceCutscene {
 /**
  * Full-bleed HTMLVideoElement cutscene drawn to the game canvas.
  * Contract: update(dt) / draw(ctx) / skip() / onDone.
+ * Video includes baked VO; timed subtitle cues mirror the stills path.
  */
 export class VideoCutscene {
   constructor({
@@ -321,6 +476,7 @@ export class VideoCutscene {
     width = W,
     height = H,
     muted = false,
+    subtitleBeats = OPENING_BEATS,
   } = {}) {
     this.onDone = onDone;
     this.onComplete = onDone;
@@ -333,6 +489,7 @@ export class VideoCutscene {
     this.failed = false;
     this.ended = false;
     this._hasData = false;
+    this.subtitleBeats = subtitleBeats || OPENING_BEATS;
 
     this.sources = Array.isArray(src) ? src.filter(Boolean) : [src || INTRO_VIDEO_LOCAL];
     this.sourceIndex = 0;
@@ -341,8 +498,9 @@ export class VideoCutscene {
     this.video.playsInline = true;
     this.video.preload = "auto";
     this.video.loop = false;
-    this.video.playbackRate = 1.1;
+    this.video.playbackRate = 1.0;
     this.video.muted = muted;
+    this.video.volume = preferredVoiceVolume();
 
     this.video.addEventListener("loadeddata", () => {
       this._hasData = true;
@@ -407,6 +565,9 @@ export class VideoCutscene {
   async ensurePlaying() {
     if (this.started || this.failed || this.done) return;
     this.started = true;
+    const vol = preferredVoiceVolume();
+    this.video.volume = vol;
+    this.video.muted = vol <= 0.001;
     try {
       await this.video.play();
     } catch {
@@ -417,6 +578,24 @@ export class VideoCutscene {
         this.started = false;
       }
     }
+  }
+
+  activeSubtitle() {
+    const t = this.video?.currentTime || this.time;
+    let cursor = 0;
+    for (const beat of this.subtitleBeats) {
+      const hold = beat.hold ?? 3.2;
+      if (t < cursor + hold) {
+        const local = t - cursor;
+        return {
+          speaker: beat.speaker,
+          caption: revealedCaption(beat.caption, local, beat.voiceDuration),
+        };
+      }
+      cursor += hold;
+    }
+    const last = this.subtitleBeats[this.subtitleBeats.length - 1];
+    return last ? { speaker: last.speaker, caption: last.caption } : null;
   }
 
   update(dt) {
@@ -446,6 +625,40 @@ export class VideoCutscene {
     }
   }
 
+  drawSubtitle(ctx, speaker, text) {
+    if (!text) return;
+    const { w, h } = this;
+    const padX = 28;
+    const maxW = w - padX * 2;
+    ctx.font = "600 18px Rajdhani, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const lines = wrapText(ctx, text, maxW);
+    const lineH = 26;
+    const speakerH = speaker ? 22 : 0;
+    const boxH = lines.length * lineH + 22 + speakerH;
+    const boxY = h - 56 - boxH - 12;
+    ctx.fillStyle = "rgba(1, 3, 8, 0.78)";
+    ctx.fillRect(18, boxY, w - 36, boxH);
+    ctx.strokeStyle = "rgba(232, 162, 74, 0.4)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(18.5, boxY + 0.5, w - 37, boxH - 1);
+    let textY = boxY + 14;
+    if (speaker) {
+      ctx.font = "700 13px Orbitron, Rajdhani, sans-serif";
+      ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
+      ctx.textAlign = "left";
+      ctx.fillText(String(speaker).toUpperCase(), 34, textY + 8);
+      textY += speakerH;
+    }
+    ctx.font = "600 18px Rajdhani, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(244, 246, 250, 0.96)";
+    lines.forEach((ln, i) => {
+      ctx.fillText(ln, w / 2, textY + lineH / 2 + i * lineH);
+    });
+  }
+
   draw(ctx) {
     if (this.done) return;
     const { w, h } = this;
@@ -471,6 +684,9 @@ export class VideoCutscene {
     ctx.fillStyle = "#010308";
     ctx.fillRect(0, 0, w, 56);
     ctx.fillRect(0, h - 56, w, 56);
+
+    const sub = this.activeSubtitle();
+    if (sub) this.drawSubtitle(ctx, sub.speaker, sub.caption);
 
     ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
     ctx.font = "700 13px Rajdhani, sans-serif";
@@ -514,17 +730,23 @@ export function createIntroCutscene(onDone) {
     },
     update(dt) {
       if (finished) return;
-      // If stills failed, swap to stitched opening video once.
       if (active === sequence && sequence.failed && !video) {
-        video = new VideoCutscene({ src: introVideoSources(), onDone: finish });
+        video = new VideoCutscene({
+          src: introVideoSources(),
+          onDone: finish,
+          subtitleBeats: OPENING_BEATS,
+        });
         active = video;
       }
-      // Timeout: stills should load fast (JPGs); fall back if stuck.
       if (active === sequence && !sequence.ready && !sequence.failed) {
         waited += dt;
         if (waited > 8) {
           sequence.failed = true;
-          video = new VideoCutscene({ src: introVideoSources(), onDone: finish });
+          video = new VideoCutscene({
+            src: introVideoSources(),
+            onDone: finish,
+            subtitleBeats: OPENING_BEATS,
+          });
           active = video;
         }
       }

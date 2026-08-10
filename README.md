@@ -14,7 +14,7 @@ This repository contains:
 **Use this link only (commit-pinned — skips stale caches):**  
 https://rawcdn.githack.com/PRangsi1886/Homework-2/c52b702dc4e4669395b1fd2974dc975098a4a232/index.html
 
-You must see **OPENING v3** in the bottom-left of the intro, plus Agent Zlisto / Princess Lisa stills with captions.
+You must see **OPENING v3** in the bottom-left, speaker-labeled subtitles (COMMAND / ZLISTO / OPS), and hear the opening voice-over.
 
 Do **not** use raw.githack.com main-branch bookmarks — that host can keep serving the old Clideo intro forever.
 
