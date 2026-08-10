@@ -8,7 +8,7 @@ import { W, H } from "./entities.js";
 /** Bump to force CDN / browser cache refresh of opening assets. */
 const OPENING_ASSET_VER = "opening-vo-2";
 /** Pin CDN assets to a known-good commit once VO lands on main. */
-const OPENING_CDN_REF = "b6956529ad99f3e4a53d35772efc6942cf44dd40";
+const OPENING_CDN_REF = "d5b3fc455d9437d6021bf4b34ca3eeac36cec50d";
 
 const OPENING_BEATS = [
   {
