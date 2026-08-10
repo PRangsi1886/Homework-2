@@ -5,20 +5,20 @@
 
 This repository contains:
 
-1. **** — final project proposal (input to the agent)
-2. **** — PydanticAI agent that turns the proposal into a short video reel
+1. **project_proposal.md** — final project proposal (input to the agent)
+2. **reel_agent.py** — PydanticAI agent that turns the proposal into a short video reel
 3. **Playable game demo** — Capital Syndicate Act 1 (browser shooter the reel pitches)
 
 ## Play the game
 
 **Use this link only (commit-pinned — skips stale caches):**  
-https://rawcdn.githack.com/PRangsi1886/Homework-2/2ff01a794e97b2552d39688ea2f976ce4c60d0af/index.html
+https://rawcdn.githack.com/PRangsi1886/Homework-2/be0328162722d652d55e3ef376212517f3172d19/index.html
 
 You must see **OPENING v3** in the bottom-left of the intro, plus Agent Zlisto / Princess Lisa stills with captions.
 
-Do **not** use  or any old bookmark — that host can keep serving the old Clideo intro forever.
+Do **not** use raw.githack.com main-branch bookmarks — that host can keep serving the old Clideo intro forever.
 
-Or locally:  → .
+Or locally: `python3 -m http.server 8080` then open http://localhost:8080
 
 ## Submit on the grading website (Canvas)
 
