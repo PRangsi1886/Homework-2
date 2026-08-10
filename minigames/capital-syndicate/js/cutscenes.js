@@ -6,7 +6,7 @@
 import { W, H } from "./entities.js";
 
 /** Bump to force CDN / browser cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-vo-3";
+const OPENING_ASSET_VER = "opening-vo-4";
 /** Pin CDN assets to a known-good commit once VO lands on main. */
 const OPENING_CDN_REF = "1b361ee402c28e4e43ed44c5c8e09e30ffa4ba9f";
 
@@ -17,16 +17,16 @@ const OPENING_BEATS = [
     speaker: "COMMAND",
     caption:
       "Welcome to Capital Syndicate: Operation Ferrum Wings. Agent Zlisto — this briefing is for you.",
-    hold: 8.91,
-    voiceDuration: 8.16,
+    hold: 8.96,
+    voiceDuration: 8.208,
   },
   {
     file: "02-legacy-base.jpg",
     voice: "02-legacy-base.mp3",
     speaker: "COMMAND",
     caption: "We've got urgent work to do… and only you can finish it.",
-    hold: 5.05,
-    voiceDuration: 4.296,
+    hold: 4.95,
+    voiceDuration: 4.2,
   },
   {
     file: "03-lisa-captured.jpg",
@@ -34,16 +34,16 @@ const OPENING_BEATS = [
     speaker: "COMMAND",
     caption:
       "Princess Lisa has been captured. Only you can save her — and the world.",
-    hold: 7.57,
-    voiceDuration: 6.816,
+    hold: 7.35,
+    voiceDuration: 6.6,
   },
   {
     file: "04-board-fighter.jpg",
     voice: "04-board-fighter.mp3",
     speaker: "ZLISTO",
     caption: "Leave it to me! I got this!",
-    hold: 3.0,
-    voiceDuration: 1.776,
+    hold: 3.87,
+    voiceDuration: 3.12,
   },
   {
     file: "05-launch.jpg",

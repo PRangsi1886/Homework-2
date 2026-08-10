@@ -1,43 +1,43 @@
 [
   {
     "id": "01-briefing",
-    "voice": "en-US-GuyNeural",
-    "rate": "-12%",
-    "pitch": "-6Hz",
+    "voice": "en-GB-RyanNeural",
+    "rate": "-8%",
+    "pitch": "-4Hz",
     "speaker": "COMMAND",
     "text": "Welcome to Capital Syndicate: Operation Ferrum Wings. Agent Zlisto \u2014 this briefing is for you.",
     "file": "01-briefing.mp3",
-    "duration": 8.16
+    "duration": 8.208
   },
   {
     "id": "02-legacy-base",
-    "voice": "en-US-GuyNeural",
-    "rate": "-12%",
-    "pitch": "-6Hz",
+    "voice": "en-GB-RyanNeural",
+    "rate": "-8%",
+    "pitch": "-4Hz",
     "speaker": "COMMAND",
     "text": "We've got urgent work to do\u2026 and only you can finish it.",
     "file": "02-legacy-base.mp3",
-    "duration": 4.296
+    "duration": 4.2
   },
   {
     "id": "03-lisa-captured",
-    "voice": "en-US-GuyNeural",
-    "rate": "-15%",
-    "pitch": "-8Hz",
+    "voice": "en-GB-RyanNeural",
+    "rate": "-10%",
+    "pitch": "-5Hz",
     "speaker": "COMMAND",
     "text": "Princess Lisa has been captured. Only you can save her \u2014 and the world.",
     "file": "03-lisa-captured.mp3",
-    "duration": 6.816
+    "duration": 6.6
   },
   {
     "id": "04-board-fighter",
-    "voice": "en-US-AndrewNeural",
-    "rate": "+22%",
-    "pitch": "+8Hz",
+    "voice": "en-US-RogerNeural",
+    "rate": "+12%",
+    "pitch": "+3Hz",
     "speaker": "ZLISTO",
     "text": "Leave it to me! I got this!",
     "file": "04-board-fighter.mp3",
-    "duration": 1.776
+    "duration": 3.12
   },
   {
     "id": "05-launch",
