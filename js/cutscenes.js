@@ -346,8 +346,8 @@ export class ImageSequenceCutscene {
   drawCover(ctx, img) {
     if (!img) return;
     const { w, h } = this;
-    // Static contain fit — show the full still, no zoom/crop/Ken Burns.
-    const scale = Math.min(w / img.width, h / img.height);
+    // Static cover fit — fill the screen (crop edges), no Ken Burns zoom.
+    const scale = Math.max(w / img.width, h / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     const dx = (w - dw) / 2;
@@ -669,7 +669,7 @@ export class VideoCutscene {
     if (this.video.readyState >= 2) {
       const vw = this.video.videoWidth || w;
       const vh = this.video.videoHeight || h;
-      const scale = Math.min(w / vw, h / vh);
+      const scale = Math.max(w / vw, h / vh);
       const dw = vw * scale;
       const dh = vh * scale;
       const dx = (w - dw) / 2;

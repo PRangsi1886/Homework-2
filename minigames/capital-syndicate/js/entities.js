@@ -170,6 +170,13 @@ export function spawnBoss(level) {
     charging: 0,
     chargeVx: 0,
     chargeVy: 0,
+    laserCd: final ? 5.5 : 99,
+    laserState: null,
+    laserT: 0,
+    laserAimX: W / 2,
+    laserHalfW: 20,
+    laserHitCd: 0,
+    attackIndex: 0,
     variant: 0,
     animOffset: 0,
   };
