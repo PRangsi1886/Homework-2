@@ -21,6 +21,7 @@
           <div class="hud-brand">CAPITAL SYNDICATE</div>
           <div class="hud-row"><span>SCORE</span><strong id="hud-score">0</strong></div>
           <div class="hud-row"><span>SECTOR</span><strong id="hud-level">1 / 4</strong></div>
+          <div class="hud-row"><span>SHIP LV</span><strong id="hud-ship-level">1</strong></div>
         </div>
         <div class="hud-right">
           <div class="hud-row"><span>FIGHTERS</span><strong id="hud-lives">3</strong></div>
@@ -119,6 +120,15 @@
         <p class="tagline" id="level-clear-sub">Next wave inbound…</p>
       </section>
 
+      <section id="upgrade-screen" class="overlay upgrade-overlay hidden">
+        <div class="upgrade-panel">
+          <p class="eyebrow">SHIP LEVEL UP</p>
+          <h2>Choose an Upgrade</h2>
+          <p class="tagline">Advancing to ship level <strong id="upgrade-ship-level">2</strong></p>
+          <div id="upgrade-choices" class="upgrade-choices"></div>
+        </div>
+      </section>
+
       <div id="volume-control" class="volume-control" aria-label="Volume controls">
         <button id="btn-mute" class="volume-mute" type="button" aria-pressed="false" title="Mute">VOL</button>
         <input
@@ -134,6 +144,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=balance-weapons-1"></script>
+    <script type="module" src="js/main.js?v=victory-levelup-1"></script>
   </body>
 </html>

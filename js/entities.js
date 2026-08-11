@@ -34,7 +34,71 @@ export function createPlayer() {
     sx: 1,
     sy: 1,
     hitFlash: 0,
+    shipLevel: 1,
+    upgrades: {
+      laserWidthMul: 1,
+      laserDamageMul: 1,
+      rocketCount: 1,
+      plasmaShots: 2,
+      minigun: false,
+      ionWidthMul: 1,
+      taken: [],
+    },
   };
+}
+
+/** Permanent upgrade choices offered after each sector boss. */
+export const UPGRADE_POOL = [
+  {
+    id: "laser",
+    title: "OVERCHARGE LASER",
+    desc: "+25% super-laser width & damage",
+  },
+  {
+    id: "rocket2",
+    title: "TWIN MISSILES",
+    desc: "Rockets fire 2 per volley",
+  },
+  {
+    id: "plasma3",
+    title: "TRIPLE PLASMA",
+    desc: "Plasma particles: 2 → 3",
+  },
+  {
+    id: "minigun",
+    title: "MINIGUN",
+    desc: "Gun +20% fire rate, +10% damage",
+  },
+  {
+    id: "ionwide",
+    title: "WIDE ION",
+    desc: "Ion particle +200% wider",
+  },
+];
+
+export function pickUpgradeChoices(taken = [], count = 3) {
+  const pool = UPGRADE_POOL.filter((u) => !taken.includes(u.id));
+  const src = pool.length ? pool : UPGRADE_POOL;
+  const shuffled = [...src].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+export function applyUpgrade(player, upgradeId) {
+  const u = player.upgrades;
+  if (!u.taken.includes(upgradeId)) u.taken.push(upgradeId);
+  if (upgradeId === "laser") {
+    u.laserWidthMul = 1.25;
+    u.laserDamageMul = 1.25;
+  } else if (upgradeId === "rocket2") {
+    u.rocketCount = 2;
+  } else if (upgradeId === "plasma3") {
+    u.plasmaShots = 3;
+  } else if (upgradeId === "minigun") {
+    u.minigun = true;
+  } else if (upgradeId === "ionwide") {
+    u.ionWidthMul = 3; // +200% width
+  }
+  player.shipLevel = (player.shipLevel || 1) + 1;
 }
 
 export const WEAPONS = {
@@ -137,41 +201,72 @@ export function spawnEnemy(type, x, y, level) {
   };
 }
 
-export function spawnBoss(level) {
+/** Sector 1 boss HP is the baseline for later sector scaling. */
+export const SECTOR1_BOSS_HP = 1650;
+
+export function bossHpForLevel(level) {
   const final = level >= MAX_LEVEL;
-  const hp = final ? 5200 : 900 + level * 280;
+  if (final) return 5200;
+  if (level <= 1) return SECTOR1_BOSS_HP;
+  if (level === 2) return Math.round(SECTOR1_BOSS_HP * 1.5);
+  // Sector 3+: 100% more than sector 1
+  return Math.round(SECTOR1_BOSS_HP * 2);
+}
+
+export function spawnBoss(level, opts = {}) {
+  const final = level >= MAX_LEVEL;
+  const hp = bossHpForLevel(level);
+  const pairIndex = opts.pairIndex || 0;
+  const pairCount = opts.pairCount || 1;
+  const slotX =
+    pairCount > 1 ? (pairIndex === 0 ? -120 : 120) : 0;
   return {
     type: "boss",
     final,
-    x: W / 2,
+    x: W / 2 + slotX,
     y: -80,
-    w: final ? 170 : 130,
-    h: final ? 120 : 96,
+    w: final ? 170 : pairCount > 1 ? 118 : 130,
+    h: final ? 120 : pairCount > 1 ? 88 : 96,
     hp,
     maxHp: hp,
-    speed: final ? 85 : 55,
+    speed: final ? 85 : 55 + level * 6,
     score: final ? 20000 : 4000 + level * 1000,
     color: final ? "#ffb060" : "#e8eef8",
     polarity: final ? "black" : "white",
-    fireRate: final ? 0.22 : 0.45,
-    bulletSpeed: final ? 360 : 280,
+    fireRate: final ? 0.22 : Math.max(0.28, 0.42 - level * 0.04),
+    bulletSpeed: final ? 360 : 280 + level * 30,
     pattern: final ? "finalBoss" : "boss",
-    fireCd: 1.2,
-    phase: 0,
+    fireCd: 1.0,
+    phase: pairIndex * 1.7,
     age: 0,
     flash: 0,
     sx: 1,
     sy: 1,
     entered: false,
     bossPhase: 1,
-    specialCd: 2.5,
-    spawnCd: 3.5,
-    chargeCd: 4.5,
+    specialCd: final ? 2.5 : 2.2 - level * 0.15,
+    // Final: escorts every 4s (3 mini planes). Sector bosses use specials.
+    spawnCd: final ? 4 : 99,
+    chargeCd: final ? 4.5 : 5.5 - level * 0.4,
     charging: 0,
     chargeVx: 0,
     chargeVy: 0,
+    // Final laser: first lock after 5s, 10s charge, 2s beam
+    laserCd: final ? 5 : 99,
+    laserState: null,
+    laserT: 0,
+    laserAimX: W / 2,
+    laserHalfW: 22,
+    laserHitCd: 0,
+    attackIndex: 0,
+    // All sector bosses alternate spread with focused gun fire
+    altGun: !final,
+    shotStyle: 0,
+    sectorLevel: level,
+    slotX,
+    pairPhase: pairIndex * Math.PI,
     variant: 0,
-    animOffset: 0,
+    animOffset: pairIndex * 0.37,
   };
 }
 
