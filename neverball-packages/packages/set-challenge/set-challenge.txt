@@ -1,8 +1,0 @@
-Challenge Courses
-Difficulty: Intermediate
-Author: Neverball Packages (Java)
-Description: Gaps, hazards, and tighter timing — inspired by community sets.
-
-01-islands
-02-ring
-03-gauntlet
