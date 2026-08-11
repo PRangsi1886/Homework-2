@@ -137,27 +137,43 @@ export function spawnEnemy(type, x, y, level) {
   };
 }
 
-export function spawnBoss(level) {
+/** Sector 1 boss HP is the baseline for later sector scaling. */
+export const SECTOR1_BOSS_HP = 900 + 280; // 1180
+
+export function bossHpForLevel(level) {
   const final = level >= MAX_LEVEL;
-  const hp = final ? 5200 : 900 + level * 280;
+  if (final) return 5200;
+  if (level <= 1) return SECTOR1_BOSS_HP;
+  if (level === 2) return Math.round(SECTOR1_BOSS_HP * 1.5);
+  // Sector 3+: 100% more than sector 1
+  return Math.round(SECTOR1_BOSS_HP * 2);
+}
+
+export function spawnBoss(level, opts = {}) {
+  const final = level >= MAX_LEVEL;
+  const hp = bossHpForLevel(level);
+  const pairIndex = opts.pairIndex || 0;
+  const pairCount = opts.pairCount || 1;
+  const slotX =
+    pairCount > 1 ? (pairIndex === 0 ? -120 : 120) : 0;
   return {
     type: "boss",
     final,
-    x: W / 2,
+    x: W / 2 + slotX,
     y: -80,
-    w: final ? 170 : 130,
-    h: final ? 120 : 96,
+    w: final ? 170 : pairCount > 1 ? 118 : 130,
+    h: final ? 120 : pairCount > 1 ? 88 : 96,
     hp,
     maxHp: hp,
     speed: final ? 85 : 55,
     score: final ? 20000 : 4000 + level * 1000,
     color: final ? "#ffb060" : "#e8eef8",
     polarity: final ? "black" : "white",
-    fireRate: final ? 0.22 : 0.45,
+    fireRate: final ? 0.22 : level >= 2 ? 0.38 : 0.45,
     bulletSpeed: final ? 360 : 280,
     pattern: final ? "finalBoss" : "boss",
     fireCd: 1.2,
-    phase: 0,
+    phase: pairIndex * 1.7,
     age: 0,
     flash: 0,
     sx: 1,
@@ -165,7 +181,8 @@ export function spawnBoss(level) {
     entered: false,
     bossPhase: 1,
     specialCd: 2.5,
-    spawnCd: 3.5,
+    // Final: first escorts at 5s, then every 6s
+    spawnCd: final ? 5 : 3.5,
     chargeCd: 4.5,
     charging: 0,
     chargeVx: 0,
@@ -177,8 +194,13 @@ export function spawnBoss(level) {
     laserHalfW: 20,
     laserHitCd: 0,
     attackIndex: 0,
+    // Sector 2+: alternate spread volley with a focused gun stream
+    altGun: !final && level >= 2,
+    shotStyle: 0,
+    slotX,
+    pairPhase: pairIndex * Math.PI,
     variant: 0,
-    animOffset: 0,
+    animOffset: pairIndex * 0.37,
   };
 }
 

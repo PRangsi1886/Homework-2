@@ -6,7 +6,7 @@
 import { W, H } from "./entities.js";
 
 /** Bump to force CDN / browser cache refresh of opening assets. */
-const OPENING_ASSET_VER = "opening-vo-6";
+const OPENING_ASSET_VER = "opening-vo-7";
 /** Pin CDN assets to a known-good commit once VO lands on main. */
 const OPENING_CDN_REF = "2debb6aa3e1f8d4d4f52ed62b158eb2bbc8f73c7";
 
@@ -42,8 +42,8 @@ const OPENING_BEATS = [
     voice: "04-board-fighter.mp3",
     speaker: "ZLISTO",
     caption: "Leave it to me! I got this!",
-    hold: 3.87,
-    voiceDuration: 3.12,
+    hold: 4.7,
+    voiceDuration: 3.768,
   },
   {
     file: "05-launch.jpg",

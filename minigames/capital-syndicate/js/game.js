@@ -433,12 +433,16 @@ export class Game {
     impactFlash(this.juice, "rgba(255,79,216,0.16)", 0.16, 0.4);
     spawnExplosion(this.particles, p.x, p.y, { big: true });
 
-    let bossRef = null;
     let bossDestroyed = false;
     // Clear nearby hostiles only (not the whole sky).
     for (const e of this.enemies) {
       if (e.type === "boss") {
-        bossRef = e;
+        e.hp -= 80; // was 260 — self-destruct is a panic tool, not a boss melt
+        e.flash = 0.2;
+        if (e.hp <= 0) {
+          this.killEnemy(e, true);
+          bossDestroyed = true;
+        }
         continue;
       }
       if (Math.hypot(e.x - p.x, e.y - p.y) < 280) this.killEnemy(e, true);
@@ -447,17 +451,13 @@ export class Game {
     this.enemyBullets = this.enemyBullets.filter(
       (b) => Math.hypot(b.x - p.x, b.y - p.y) > 220
     );
-    if (bossRef) {
-      bossRef.hp -= 80; // was 260 — self-destruct is a panic tool, not a boss melt
-      bossRef.flash = 0.2;
-      if (bossRef.hp <= 0) {
-        this.killEnemy(bossRef, true);
-        bossDestroyed = true;
-      }
-    }
 
     this.loseLife(true);
-    if (bossDestroyed && this.state !== STATES.GAME_OVER) this.defeatBoss();
+    if (bossDestroyed && this.state !== STATES.GAME_OVER) {
+      const bossesLeft = this.enemies.some((e) => e.type === "boss" && e.hp > 0);
+      if (!bossesLeft) this.defeatBoss();
+      else this.boss = this.enemies.find((e) => e.type === "boss" && e.hp > 0) || null;
+    }
   }
 
   buildLevel() {
@@ -612,10 +612,19 @@ export class Game {
       this.enemies.length === 0
     ) {
       this.levelPhase = "boss";
-      this.boss = spawnBoss(this.level);
-      this.enemies.push(this.boss);
+      const pairCount = this.level === 3 ? 2 : 1;
+      const bosses = [];
+      for (let i = 0; i < pairCount; i++) {
+        bosses.push(spawnBoss(this.level, { pairIndex: i, pairCount }));
+      }
+      this.boss = bosses[0];
+      this.enemies.push(...bosses);
       const label =
-        this.level >= MAX_LEVEL ? "FINAL BOSS — BLOCKADE COMMANDER" : `BOSS — SECTOR ${this.level}`;
+        this.level >= MAX_LEVEL
+          ? "FINAL BOSS — BLOCKADE COMMANDER"
+          : pairCount > 1
+            ? `TWIN BOSSES — SECTOR ${this.level}`
+            : `BOSS — SECTOR ${this.level}`;
       this.flashMessage(label, 1.8);
       this.audio.alert();
       this.audio.setMusic("boss");
@@ -903,16 +912,17 @@ export class Game {
       e.specialCd = e.bossPhase === 1 ? 3.8 : e.bossPhase === 2 ? 3.0 : 2.3;
     }
 
-    if (e.spawnCd <= 0 && e.bossPhase >= 2 && e.charging <= 0) {
-      const n = e.bossPhase === 3 ? 2 : 1;
+    if (e.spawnCd <= 0 && e.charging <= 0) {
+      // Smaller mob escorts — first wave after 5s, then every 6s
+      const n = e.bossPhase >= 3 ? 2 : 1;
       for (let i = 0; i < n; i++) {
-        const type = Math.random() > 0.5 ? "dart" : "scout";
+        const type = Math.random() > 0.45 ? "dart" : "scout";
         this.pendingSpawns.push(
-          spawnEnemy(type, e.x + (i - (n - 1) / 2) * 40, e.y + 30, this.level)
+          spawnEnemy(type, e.x + (i - (n - 1) / 2) * 44, e.y + 30, this.level)
         );
       }
       this.flashMessage("COMMANDER DEPLOYS ESCORTS", 1);
-      e.spawnCd = e.bossPhase === 3 ? 6.5 : 8;
+      e.spawnCd = 6;
       this.audio.alert();
     }
 
@@ -983,7 +993,7 @@ export class Game {
         Math.abs(p.x - e.laserAimX) < e.laserHalfW + p.w * 0.35
       ) {
         if (e.laserHitCd <= 0) {
-          this.damagePlayer(e.bossPhase >= 3 ? 20 : 15);
+          this.damagePlayer(e.bossPhase >= 3 ? 14 : 11);
           e.laserHitCd = 0.11;
           spawnSparks(this.particles, p.x, p.y, 6);
         }
@@ -1039,7 +1049,7 @@ export class Game {
         h: 8,
         vx: Math.cos(a) * (220 + e.bossPhase * 30),
         vy: Math.sin(a) * (220 + e.bossPhase * 30),
-        damage: 16,
+        damage: 11,
         color: "#ffb020",
         life: 3.5,
         heavy: true,
@@ -1062,7 +1072,7 @@ export class Game {
           h: 7,
           vx: Math.cos(a) * speed,
           vy: Math.sin(a) * speed,
-          damage: 14,
+          damage: 9,
           color: i % 2 ? "#f2f5ff" : "#ff8a40",
           life: 3.2,
           heavy: i % 2 === 0,
@@ -1078,7 +1088,7 @@ export class Game {
     const spread = 0.55 + e.bossPhase * 0.08;
     for (let i = 0; i < shots; i++) {
       const t = shots === 1 ? 0.5 : i / (shots - 1);
-      const a = aim - spread / 2 + spread * spread;
+      const a = aim - spread / 2 + t * spread;
       this.enemyBullets.push({
         x: e.x,
         y: e.y + e.h / 2,
@@ -1086,7 +1096,7 @@ export class Game {
         h: 10,
         vx: Math.cos(a) * (300 + e.bossPhase * 35),
         vy: Math.sin(a) * (300 + e.bossPhase * 35),
-        damage: 15,
+        damage: 10,
         color: "#ffe08a",
         life: 3.0,
         heavy: true,
@@ -1105,7 +1115,7 @@ export class Game {
           h: 11,
           vx: side * (40 + i * 18),
           vy: e.bulletSpeed * (0.75 + i * 0.08),
-          damage: 15,
+          damage: 10,
           color: side < 0 ? "#1a1e26" : "#f2f5ff",
           life: 2.8,
           heavy: side < 0,
@@ -1127,7 +1137,7 @@ export class Game {
         h: 8,
         vx: Math.cos(a) * e.bulletSpeed,
         vy: Math.sin(a) * e.bulletSpeed,
-        damage: 17,
+        damage: 11,
         color: i % 2 ? "#f2f5ff" : "#1a1e26",
         life: 3.1,
         heavy: i % 2 === 0,
@@ -1171,8 +1181,10 @@ export class Game {
         targetX = W / 2 + Math.sin(e.phase * speed) * (W * amp);
         targetY = holdY + Math.sin(e.phase * 2.1) * (e.bossPhase === 3 ? 40 : 28);
       } else {
-        targetX = W / 2 + Math.sin(e.phase * 0.9) * (W * 0.28);
-        targetY = holdY + Math.sin(e.phase * 1.7) * 18;
+        const slot = e.slotX || 0;
+        const amp = slot ? 0.18 : 0.28;
+        targetX = W / 2 + slot + Math.sin(e.phase * 0.9 + (e.pairPhase || 0)) * (W * amp);
+        targetY = holdY + Math.sin(e.phase * 1.7 + (e.pairPhase || 0)) * 18;
       }
       const follow = Math.min(1, 3.2 * dt);
       e.x += (targetX - e.x) * follow;
@@ -1228,7 +1240,7 @@ export class Game {
             h: 8,
             vx: Math.cos(a) * e.bulletSpeed,
             vy: Math.sin(a) * e.bulletSpeed,
-            damage: 18,
+            damage: 12,
             color: dark ? "#1a1e26" : "#f2f5ff",
             life: 3.2,
             heavy: dark,
@@ -1247,7 +1259,7 @@ export class Game {
             h: 7,
             vx: Math.cos(a) * (210 + phase * 25),
             vy: Math.sin(a) * (210 + phase * 25),
-            damage: 14,
+            damage: 9,
             color: i % 2 ? "#f2f5ff" : "#1a1e26",
             life: 2.6,
             heavy: i % 2 === 0,
@@ -1264,7 +1276,7 @@ export class Game {
             h: 12,
             vx: i * 16 + (this.player.x - e.x) * 0.04,
             vy: e.bulletSpeed * 0.95,
-            damage: 16,
+            damage: 11,
             color: bulletColor,
             life: 2.8,
             heavy: black,
@@ -1280,7 +1292,7 @@ export class Game {
             h: 9,
             vx: Math.cos(a) * (e.bulletSpeed + 40),
             vy: Math.sin(a) * (e.bulletSpeed + 40),
-            damage: 18,
+            damage: 12,
             color: "#ffb020",
             life: 3.0,
             heavy: true,
@@ -1289,6 +1301,28 @@ export class Game {
         }
       }
       return;
+    }
+
+    // Sector 2+ bosses alternate spread volley with a focused gun stream
+    if (e.type === "boss" && e.altGun) {
+      e.shotStyle = ((e.shotStyle || 0) + 1) % 2;
+      if (e.shotStyle === 1) {
+        for (let i = 0; i < 5; i++) {
+          this.enemyBullets.push({
+            x: e.x + (i - 2) * 3,
+            y: e.y + e.h / 2 + i * 6,
+            w: 6,
+            h: 10,
+            vx: Math.cos(aim) * (e.bulletSpeed + 40) + (i - 2) * 8,
+            vy: Math.sin(aim) * (e.bulletSpeed + 40),
+            damage: 14,
+            color: "#9ec8ff",
+            life: 2.8,
+            heavy: false,
+          });
+        }
+        return;
+      }
     }
 
     const shots = e.type === "boss" ? 5 : e.type === "heavy" ? 3 : 1;
@@ -1479,7 +1513,15 @@ export class Game {
         this.powerups.push(spawnPowerup("rocket", e.x, e.y));
       }
     }
-    if (e.type === "boss" && !fromSuicide) this.defeatBoss();
+    if (e.type === "boss" && !fromSuicide) {
+      const remaining = this.enemies.some((x) => x.type === "boss" && x !== e && !x._dead && x.hp > 0);
+      if (remaining) {
+        this.boss = this.enemies.find((x) => x.type === "boss" && x !== e && !x._dead && x.hp > 0) || null;
+        this.flashMessage("WINGMAN DOWN", 1.1);
+      } else {
+        this.defeatBoss();
+      }
+    }
   }
 
   defeatBoss() {
@@ -1792,14 +1834,21 @@ export class Game {
       }
     }
 
-    if (this.boss && this.levelPhase === "boss") {
-      const ratio = clamp(this.boss.hp / this.boss.maxHp, 0, 1);
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(80, 24, W - 160, 14);
-      ctx.fillStyle = this.boss.final ? "#e8a24a" : "#dce6ff";
-      ctx.fillRect(80, 24, (W - 160) * ratio, 14);
-      ctx.strokeStyle = "rgba(255,255,255,0.4)";
-      ctx.strokeRect(80, 24, W - 160, 14);
+    if (this.levelPhase === "boss") {
+      const bosses = this.enemies.filter((e) => e.type === "boss" && e.hp > 0);
+      const live = bosses.length ? bosses : this.boss ? [this.boss] : [];
+      if (live.length) {
+        const hp = live.reduce((s, b) => s + Math.max(0, b.hp), 0);
+        const maxHp = live.reduce((s, b) => s + b.maxHp, 0) || 1;
+        const ratio = clamp(hp / maxHp, 0, 1);
+        const isFinal = live.some((b) => b.final);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(80, 24, W - 160, 14);
+        ctx.fillStyle = isFinal ? "#e8a24a" : "#dce6ff";
+        ctx.fillRect(80, 24, (W - 160) * ratio, 14);
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.strokeRect(80, 24, W - 160, 14);
+      }
     }
 
     if (this.message) {
