@@ -28,3 +28,7 @@ output/
 *.log
 .playwright/
 dist/
+
+# Tah's Board of Realities clone (pulled locally; keep README + helper script)
+board-of-realities/repo/
+board-of-realities/.tmp/
