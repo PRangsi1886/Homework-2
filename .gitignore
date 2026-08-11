@@ -10,6 +10,10 @@ venv/
 
 # Agent / media outputs (keep grading JSON + slides; omit heavy binaries)
 audio/
+!assets/audio/
+!assets/audio/**
+!minigames/**/assets/audio/
+!minigames/**/assets/audio/**
 output/
 *.mp4
 !assets/**/*.mp4
