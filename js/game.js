@@ -276,6 +276,8 @@ export class Game {
     this.laserCharge = 0;
     this.superLaser = null;
     this.killShakeScale = 1;
+    this.selfDestructUsed = false;
+    this.selfDestructArmed = 0;
   }
 
   currentMusicMode() {
@@ -398,6 +400,10 @@ export class Game {
 
   armSelfDestruct() {
     if (this.state !== STATES.PLAYING || !this.player.alive) return;
+    if (this.selfDestructUsed) {
+      this.flashMessage("SELF-DESTRUCT SPENT THIS SECTOR", 1.1);
+      return;
+    }
     const now = performance.now();
     if (now - this.selfDestructArmed < 700) {
       this.selfDestruct();
@@ -409,36 +415,41 @@ export class Game {
   }
 
   selfDestruct() {
+    if (this.selfDestructUsed) return;
+    this.selfDestructUsed = true;
     const p = this.player;
     const ejected = spawnPickupAmmo(p.x, p.y - 20, {
-      ion: p.ammo.ion,
-      plasma: p.ammo.plasma,
-      rocket: p.ammo.rocket,
+      ion: Math.floor(p.ammo.ion * 0.5),
+      plasma: Math.floor(p.ammo.plasma * 0.5),
+      rocket: Math.floor(p.ammo.rocket * 0.5),
       gun: 0,
     });
     this.powerups.push(ejected);
-    this.burst(p.x, p.y, "#4de8ff", 48, 340);
+    this.burst(p.x, p.y, "#4de8ff", 36, 280);
     this.audio.explosion(true);
-    this.shake = 18;
-    addTrauma(this.juice, 0.55);
-    hitStop(this.juice, 0.1);
-    impactFlash(this.juice, "rgba(255,79,216,0.22)", 0.22, 0.55);
+    this.shake = 10;
+    addTrauma(this.juice, 0.35);
+    hitStop(this.juice, 0.08);
+    impactFlash(this.juice, "rgba(255,79,216,0.16)", 0.16, 0.4);
     spawnExplosion(this.particles, p.x, p.y, { big: true });
 
     let bossRef = null;
     let bossDestroyed = false;
+    // Clear nearby hostiles only (not the whole sky).
     for (const e of this.enemies) {
       if (e.type === "boss") {
         bossRef = e;
         continue;
       }
-      this.killEnemy(e, true);
+      if (Math.hypot(e.x - p.x, e.y - p.y) < 280) this.killEnemy(e, true);
     }
-    this.enemies = this.enemies.filter((e) => e.type === "boss" && e.hp > 0);
-    this.enemyBullets = [];
+    this.enemies = this.enemies.filter((e) => e.hp > 0);
+    this.enemyBullets = this.enemyBullets.filter(
+      (b) => Math.hypot(b.x - p.x, b.y - p.y) > 220
+    );
     if (bossRef) {
-      bossRef.hp -= 260;
-      bossRef.flash = 0.25;
+      bossRef.hp -= 80; // was 260 — self-destruct is a panic tool, not a boss melt
+      bossRef.flash = 0.2;
       if (bossRef.hp <= 0) {
         this.killEnemy(bossRef, true);
         bossDestroyed = true;
@@ -460,6 +471,8 @@ export class Game {
     this.spawnQueue = [];
     this.levelPhase = "waves";
     this.levelKills = 0;
+    this.selfDestructUsed = false;
+    this.selfDestructArmed = 0;
 
     const waves = [];
     const isFinal = this.level >= MAX_LEVEL;
@@ -624,7 +637,7 @@ export class Game {
     this.player.shield = Math.min(100, this.player.shield + 25);
     this.player.ammo.ion += 12;
     this.player.ammo.plasma += 8;
-    this.player.ammo.rocket += 4;
+    this.player.ammo.rocket += 2;
     this.buildLevel();
     this.state = STATES.PLAYING;
     this.showScreen("playing");
@@ -717,30 +730,25 @@ export class Game {
     this.muzzleFlashes.push({ x: p.x, y: p.y - 26, t: 0.12, weapon });
 
     if (weapon === "rocket") {
-      const speed = def.speed;
-      const cone = [-0.28, 0, 0.28];
-      for (const ang of cone) {
-        const vx = Math.sin(ang) * speed;
-        const vy = -Math.cos(ang) * speed;
-        this.bullets.push({
-          x: p.x + Math.sin(ang) * 12,
-          y: p.y - 28,
-          w: 14,
-          h: 28,
-          vy,
-          vx,
-          damage: def.damage,
-          pierce: false,
-          splash: def.splash,
-          splashDamage: def.splashDamage,
-          homing: def.homing,
-          color: def.color,
-          life: 2.2,
-          weapon,
-        });
-      }
+      // One smart missile with strong homing + wider blast radius.
+      this.bullets.push({
+        x: p.x,
+        y: p.y - 28,
+        w: 16,
+        h: 30,
+        vy: -def.speed,
+        vx: 0,
+        damage: def.damage,
+        pierce: false,
+        splash: def.splash,
+        splashDamage: def.splashDamage,
+        homing: def.homing,
+        color: def.color,
+        life: 2.6,
+        weapon,
+      });
       this.audio.shoot("rocket");
-      addTrauma(this.juice, 0.08);
+      addTrauma(this.juice, 0.06);
       return;
     }
 
@@ -772,19 +780,22 @@ export class Game {
         let bestD = Infinity;
         for (const e of this.enemies) {
           if (e.hp <= 0) continue;
+          // Prefer threats ahead, but allow a wider forward seek cone.
           const d = Math.hypot(e.x - b.x, e.y - b.y);
-          if (d < bestD && e.y < b.y + 40) {
+          if (d < bestD && e.y < b.y + 120 && d < 520) {
             bestD = d;
             best = e;
           }
         }
         if (best) {
           const ang = Math.atan2(best.y - b.y, best.x - b.x);
-          const speed = Math.hypot(b.vx || 0, b.vy);
+          const speed = Math.max(WEAPONS.rocket.speed, Math.hypot(b.vx || 0, b.vy));
           const tx = Math.cos(ang) * speed;
           const ty = Math.sin(ang) * speed;
-          b.vx = (b.vx || 0) + (tx - (b.vx || 0)) * Math.min(1, b.homing * dt * 0.01);
-          b.vy = b.vy + (ty - b.vy) * Math.min(1, b.homing * dt * 0.01);
+          // Stronger turn-in than the old 3-shot cone missiles.
+          const turn = Math.min(1, b.homing * dt * 0.018);
+          b.vx = (b.vx || 0) + (tx - (b.vx || 0)) * turn;
+          b.vy = b.vy + (ty - b.vy) * turn;
         }
       }
       b.x += (b.vx || 0) * dt;
@@ -1126,9 +1137,9 @@ export class Game {
         spawnSparks(this.particles, b.x, b.y, b.weapon === "rocket" ? 16 : 7);
         if (b.weapon === "rocket") {
           spawnSmoke(this.particles, b.x, b.y, 10);
-          addTrauma(this.juice, 0.38);
-          hitStop(this.juice, 0.08);
-          impactFlash(this.juice, "rgba(255,79,216,0.2)", 0.2, 0.45);
+          addTrauma(this.juice, 0.23); // ~40% less than previous 0.38
+          hitStop(this.juice, 0.06);
+          impactFlash(this.juice, "rgba(255,79,216,0.14)", 0.14, 0.4);
           spawnExplosion(this.particles, b.x, b.y, { big: false });
         } else {
           addTrauma(this.juice, 0.04);
@@ -1195,10 +1206,10 @@ export class Game {
         if (e.hp <= 0) this.killEnemy(e);
       }
     }
-    this.shake = Math.max(this.shake, 10);
+    this.shake = Math.max(this.shake, 6); // ~40% less than previous rocket splash shake (10)
     spawnExplosion(this.particles, b.x, b.y, { big: false });
-    addTrauma(this.juice, 0.2);
-    impactFlash(this.juice, "rgba(255,122,61,0.16)", 0.16, 0.4);
+    addTrauma(this.juice, 0.12); // was 0.2 — ~40% less
+    impactFlash(this.juice, "rgba(255,122,61,0.12)", 0.12, 0.35);
     this.audio.explosion(false);
   }
 
@@ -1232,22 +1243,22 @@ export class Game {
       this.score += e.score;
       this.levelKills += 1;
       this.combo += 1;
-      if (Math.random() < 0.14 + Math.min(0.1, this.combo * 0.01)) {
+      if (Math.random() < 0.07 + Math.min(0.05, this.combo * 0.005)) {
         const types = ["shield", "repair", "super", "rocket"];
         const max = this.level >= 2 ? 4 : 3;
         const type = types[(Math.random() * max) | 0];
         this.powerups.push(spawnPowerup(type, e.x, e.y));
       }
-      if (Math.random() < 0.08) {
+      if (Math.random() < 0.04) {
         this.powerups.push(
           spawnPickupAmmo(e.x, e.y, {
             ion: 8 + ((Math.random() * 8) | 0),
             plasma: 4 + ((Math.random() * 6) | 0),
-            rocket: 2 + ((Math.random() * 3) | 0),
+            rocket: 1 + ((Math.random() * 2) | 0),
             gun: 0,
           })
         );
-      } else if (Math.random() < 0.06) {
+      } else if (Math.random() < 0.03) {
         this.powerups.push(spawnPowerup("rocket", e.x, e.y));
       }
     }

@@ -27,7 +27,7 @@ export function createPlayer() {
     hull: 100,
     invuln: 0,
     weapon: "gun",
-    ammo: { gun: Infinity, ion: 40, plasma: 24, rocket: 10 },
+    ammo: { gun: Infinity, ion: 40, plasma: 24, rocket: 8 },
     fireCd: 0,
     trail: [],
     alive: true,
@@ -39,16 +39,19 @@ export function createPlayer() {
 
 export const WEAPONS = {
   gun: { rate: 0.1, speed: 780, damage: 12, pierce: false, splash: 0, color: "#e8eeff", cost: 0 },
-  ion: { rate: 0.16, speed: 980, damage: 28, pierce: true, splash: 0, color: "#9eb6ff", cost: 1 },
-  plasma: { rate: 0.08, speed: 640, damage: 40, pierce: false, splash: 0, color: "#ffb060", cost: 1 },
+  // Harder-hitting pierce bolt; slower cadence than before.
+  ion: { rate: 0.28, speed: 980, damage: 42, pierce: true, splash: 0, color: "#9eb6ff", cost: 1 },
+  // Nerf plasma DPS (was ~500) — still punchy, no longer the default shredder.
+  plasma: { rate: 0.14, speed: 640, damage: 22, pierce: false, splash: 0, color: "#ffb060", cost: 1 },
+  // Single smart missile: wider blast, stronger seek, one shot per press.
   rocket: {
-    rate: 0.42,
-    speed: 420,
-    damage: 95,
+    rate: 0.55,
+    speed: 460,
+    damage: 110,
     pierce: false,
-    splash: 70,
-    splashDamage: 55,
-    homing: 220,
+    splash: 91, // +30% vs previous 70
+    splashDamage: 65,
+    homing: 420,
     color: "#ffb060",
     cost: 1,
   },
@@ -176,7 +179,7 @@ export const POWERUP_TYPES = {
   shield: { label: "SHIELD", color: "#3ef0d0", passScore: 500 },
   repair: { label: "REPAIR", color: "#f0a23a", passScore: 500 },
   super: { label: "SUPER", color: "#ff5a6e", passScore: 0, extraLife: true },
-  rocket: { label: "ROCKET", color: "#ff8a40", passScore: 300, rockets: 4 },
+  rocket: { label: "ROCKET", color: "#ff8a40", passScore: 300, rockets: 2 },
 };
 
 export function spawnPowerup(type, x, y) {
