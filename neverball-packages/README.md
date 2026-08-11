@@ -10,6 +10,13 @@ Neverball itself is written in C and ships Quake-style `.map` / `.sol` levels. T
 
 Upstream inspiration: [neverball.org](https://neverball.org) · [Neverball/packages](https://github.com/Neverball/packages)
 
+## Play in the browser
+
+**Commit-pinned play link:**  
+https://rawcdn.githack.com/PRangsi1886/Homework-2/2e03c2a9a9d0d889b553dafcf40846663495d4db/neverball-packages/play.html
+
+Or open `play.html` locally after cloning.
+
 ## Requirements
 
 - JDK 17+ (tested on OpenJDK 21)
