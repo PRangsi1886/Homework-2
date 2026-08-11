@@ -8,6 +8,7 @@ This repository contains:
 1. **project_proposal.md** — final project proposal (input to the agent)
 2. **reel_agent.py** — PydanticAI agent that turns the proposal into a short video reel
 3. **Playable game demo** — Capital Syndicate Act 1 (browser shooter the reel pitches)
+4. **neverball-packages/** — Java Neverball-style tilt-ball game + addon packs inspired by [Neverball/packages](https://github.com/Neverball/packages) (`./build.sh && ./run.sh`)
 
 ## Play the game
 

@@ -1,0 +1,20 @@
+name: Split Paths
+time: 90
+goalCoins: 10
+message: Two wings of coins. Blue coins are worth 10 — enough for the goal alone.
+
+platform  -2 -2  4 4
+platform  -9 -1  5 3
+platform   4 -1  5 3
+platform  -2  5  4 5
+spawn      0 0
+coin      -7 0  1
+coin      -6 1  1
+coin      -8 1  5
+coin       6 0  1
+coin       7 1  1
+coin       8 0  10
+coin       0 6  1
+coin       0 7  1
+goal       0 8.2  1.4
+wall      -0.4 2.8  0.8 2.2

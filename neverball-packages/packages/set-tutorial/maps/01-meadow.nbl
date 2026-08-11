@@ -1,0 +1,13 @@
+name: Meadow Start
+time: 70
+goalCoins: 5
+message: Arrow keys tilt the floor. Collect 5 coins, then roll onto the golden exit.
+
+platform  -7 -7  14 14
+spawn      0 0
+coin      -3 -2  1
+coin       3 -2  1
+coin      -3  3  1
+coin       3  3  1
+coin       0  5  5
+goal       0  5.5  1.5

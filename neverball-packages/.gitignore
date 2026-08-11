@@ -1,0 +1,4 @@
+# Ignore build output
+bin/
+*.class
+.DS_Store
