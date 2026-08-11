@@ -2,17 +2,19 @@
 
 Drop-in browser mini-game for the **Board of Realities** collab.
 
-## Quick drop-in
+## Quick drop-in (for Tah)
 
-Copy this entire folder to your collab repo:
+1. Download: https://github.com/PRangsi1886/Homework-2/releases/download/capital-syndicate-minigame/capital-syndicate-minigame.zip
+2. Extract the zip into the **root** of `Final-Project-board-of-realities`
+3. You should get this path:
 
 ```text
 Final-Project-board-of-realities/minigames/capital-syndicate/
 ```
 
-Or download the release zip `capital-syndicate-minigame.zip` from this repo’s Releases and extract it to that path.
+4. Commit + push to `main`
 
-Then link / iframe / route the board hub to:
+Hub / iframe route:
 
 ```text
 minigames/capital-syndicate/index.html
