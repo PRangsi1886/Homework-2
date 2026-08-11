@@ -12,6 +12,9 @@ import {
   spawnBoss,
   spawnPowerup,
   spawnPickupAmmo,
+  pickUpgradeChoices,
+  applyUpgrade,
+  UPGRADE_POOL,
 } from "./entities.js";
 import { getSprites, drawSprite } from "./sprites.js";
 import { loadPickupAtlas } from "./pickups.js";
@@ -43,6 +46,8 @@ const STATES = {
   PLAYING: "playing",
   PAUSED: "paused",
   LEVEL_CLEAR: "levelclear",
+  UPGRADE: "upgrade",
+  VICTORY_BANNER: "victorybanner",
   GAME_OVER: "gameover",
   VICTORY: "victory",
 };
@@ -96,6 +101,9 @@ export class Game {
       gameover: document.getElementById("gameover-screen"),
       victory: document.getElementById("victory-screen"),
       levelclear: document.getElementById("levelclear-screen"),
+      upgrade: document.getElementById("upgrade-screen"),
+      upgradeChoices: document.getElementById("upgrade-choices"),
+      upgradeLevel: document.getElementById("upgrade-ship-level"),
       score: document.getElementById("hud-score"),
       level: document.getElementById("hud-level"),
       lives: document.getElementById("hud-lives"),
@@ -111,6 +119,7 @@ export class Game {
       victoryScore: document.getElementById("victory-score"),
       levelClearTitle: document.getElementById("level-clear-title"),
       levelClearSub: document.getElementById("level-clear-sub"),
+      shipLevel: document.getElementById("hud-ship-level"),
     };
 
     document.getElementById("btn-start").addEventListener("click", () => this.startGame());
@@ -119,6 +128,13 @@ export class Game {
     document.getElementById("btn-resume").addEventListener("click", () => this.resume());
     const skipBtn = document.getElementById("btn-skip-cutscene");
     if (skipBtn) skipBtn.addEventListener("click", () => this.skipCutscene());
+    if (this.ui.upgradeChoices) {
+      this.ui.upgradeChoices.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-upgrade]");
+        if (!btn) return;
+        this.chooseUpgrade(btn.dataset.upgrade);
+      });
+    }
     document.getElementById("btn-how").addEventListener("click", () => {
       this.ui.title.classList.add("hidden");
       this.ui.briefing.classList.remove("hidden");
@@ -283,8 +299,14 @@ export class Game {
   currentMusicMode() {
     if (this.state === STATES.VICTORY) return "victory";
     if (this.state === STATES.CUTSCENE) return "cutscene";
-    if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.PAUSED) {
-      if (this.levelPhase === "boss" || this.levelPhase === "victory") return "boss";
+    if (
+      this.state === STATES.PLAYING ||
+      this.state === STATES.LEVEL_CLEAR ||
+      this.state === STATES.VICTORY_BANNER ||
+      this.state === STATES.UPGRADE ||
+      this.state === STATES.PAUSED
+    ) {
+      if (this.levelPhase === "boss" || this.levelPhase === "victoryBanner") return "boss";
       return "combat";
     }
     return "title";
@@ -345,7 +367,7 @@ export class Game {
   }
 
   showScreen(mode) {
-    const { hud, title, briefing, cutscene, pause, gameover, victory, levelclear } = this.ui;
+    const { hud, title, briefing, cutscene, pause, gameover, victory, levelclear, upgrade } = this.ui;
     title.classList.add("hidden");
     briefing.classList.add("hidden");
     if (cutscene) cutscene.classList.add("hidden");
@@ -353,6 +375,7 @@ export class Game {
     gameover.classList.add("hidden");
     victory.classList.add("hidden");
     levelclear.classList.add("hidden");
+    if (upgrade) upgrade.classList.add("hidden");
     hud.classList.add("hidden");
 
     if (mode === "playing") hud.classList.remove("hidden");
@@ -371,6 +394,13 @@ export class Game {
     if (mode === "levelclear") {
       hud.classList.remove("hidden");
       levelclear.classList.remove("hidden");
+    }
+    if (mode === "upgrade" && upgrade) {
+      hud.classList.remove("hidden");
+      upgrade.classList.remove("hidden");
+    }
+    if (mode === "victorybanner") {
+      hud.classList.remove("hidden");
     }
   }
 
@@ -515,7 +545,7 @@ export class Game {
     }
 
     // Freeze-frame: keep rendering juice/flash, pause simulation
-    if (this.juice.hitstop > 0 && (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR)) {
+    if (this.juice.hitstop > 0 && (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR || this.state === STATES.VICTORY_BANNER)) {
       decayJuice(this.juice, dt);
       if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
       this.draw();
@@ -523,7 +553,11 @@ export class Game {
       return;
     }
 
-    if (this.state === STATES.PLAYING || this.state === STATES.LEVEL_CLEAR) {
+    if (
+      this.state === STATES.PLAYING ||
+      this.state === STATES.LEVEL_CLEAR ||
+      this.state === STATES.VICTORY_BANNER
+    ) {
       this.accum += dt;
       while (this.accum >= this.step) {
         this.update(this.step);
@@ -578,12 +612,13 @@ export class Game {
 
     if (this.levelPhase === "waves") this.updateWaves(dt);
     else if (this.levelPhase === "boss") this.updateBossPhase(dt);
-    else if (this.levelPhase === "clear" || this.levelPhase === "victory") {
+    else if (this.levelPhase === "clear") {
       this.clearTimer -= dt;
-      if (this.clearTimer <= 0) {
-        if (this.levelPhase === "victory") this.showVictory();
-        else this.nextLevel();
-      }
+      if (this.clearTimer <= 0) this.openUpgradeSelect();
+    } else if (this.levelPhase === "victoryBanner") {
+      this.clearTimer -= dt;
+      this.victoryBannerT = (this.victoryBannerT || 0) + dt;
+      if (this.clearTimer <= 0) this.showVictory();
     }
 
     this.updatePlayer(dt);
@@ -728,58 +763,111 @@ export class Game {
       p.weapon = "gun";
     }
     const def = WEAPONS[weapon];
+    const up = p.upgrades || {};
     if (weapon !== "gun") {
       p.ammo[weapon] -= def.cost;
       if (p.ammo[weapon] < 0) p.ammo[weapon] = 0;
     }
-    p.fireCd = def.rate;
+    let rate = def.rate;
+    let damage = def.damage;
+    if (weapon === "gun" && up.minigun) {
+      rate *= 0.8; // +20% attack speed
+      damage *= 1.1;
+    }
+    p.fireCd = rate;
 
     setSquash(p, 0.82, 1.22);
     spawnMuzzle(this.particles, p.x, p.y - 26);
     this.muzzleFlashes.push({ x: p.x, y: p.y - 26, t: 0.12, weapon });
 
     if (weapon === "rocket") {
-      // One smart missile with strong homing + wider blast radius.
-      this.bullets.push({
-        x: p.x,
-        y: p.y - 28,
-        w: 16,
-        h: 30,
-        vy: -def.speed,
-        vx: 0,
-        damage: def.damage,
-        pierce: false,
-        splash: def.splash,
-        splashDamage: def.splashDamage,
-        homing: def.homing,
-        color: def.color,
-        life: 2.6,
-        weapon,
-      });
+      const count = up.rocketCount || 1;
+      for (let i = 0; i < count; i++) {
+        const ox = count > 1 ? (i === 0 ? -16 : 16) : 0;
+        this.bullets.push({
+          x: p.x + ox,
+          y: p.y - 28,
+          w: 16,
+          h: 30,
+          vy: -def.speed,
+          vx: count > 1 ? ox * 0.6 : 0,
+          damage: def.damage,
+          pierce: false,
+          splash: def.splash,
+          splashDamage: def.splashDamage,
+          homing: def.homing,
+          color: def.color,
+          life: 2.6,
+          weapon,
+        });
+      }
       this.audio.shoot("rocket");
       addTrauma(this.juice, 0.06);
       return;
     }
 
-    const spread = weapon === "plasma" ? 2 : weapon === "gun" ? 1 : 0;
-    for (let i = -spread; i <= spread; i++) {
-      if (spread && i === 0 && weapon === "plasma") continue;
+    if (weapon === "plasma") {
+      const n = up.plasmaShots || 2;
+      for (let i = 0; i < n; i++) {
+        const t = n === 1 ? 0 : i / (n - 1) - 0.5;
+        this.bullets.push({
+          x: p.x + t * 26,
+          y: p.y - 24,
+          w: 12,
+          h: 22,
+          vy: -def.speed,
+          vx: t * 90,
+          damage: def.damage,
+          pierce: false,
+          splash: 0,
+          color: def.color,
+          life: 1.4,
+          weapon,
+        });
+      }
+      this.audio.shoot("plasma");
+      return;
+    }
+
+    if (weapon === "ion") {
+      const widthMul = up.ionWidthMul || 1;
       this.bullets.push({
-        x: p.x + i * 10,
+        x: p.x,
         y: p.y - 24,
-        w: weapon === "plasma" ? 12 : weapon === "ion" ? 8 : 6,
-        h: weapon === "plasma" ? 22 : weapon === "ion" ? 28 : 16,
+        w: 8 * widthMul,
+        h: 28,
         vy: -def.speed,
-        vx: i * 40,
+        vx: 0,
         damage: def.damage,
-        pierce: def.pierce,
+        pierce: true,
         splash: 0,
         color: def.color,
         life: 1.4,
         weapon,
       });
+      this.audio.shoot("ion");
+      return;
     }
-    this.audio.shoot(weapon);
+
+    // Gun / minigun
+    const spread = 1;
+    for (let i = -spread; i <= spread; i++) {
+      this.bullets.push({
+        x: p.x + i * 10,
+        y: p.y - 24,
+        w: 6,
+        h: 16,
+        vy: -def.speed,
+        vx: i * 40,
+        damage,
+        pierce: false,
+        splash: 0,
+        color: up.minigun ? "#ffe08a" : def.color,
+        life: 1.4,
+        weapon,
+      });
+    }
+    this.audio.shoot("gun");
   }
 
   updateBullets(dt) {
@@ -872,6 +960,8 @@ export class Game {
 
       if (e.type === "boss" && e.final && e.entered) {
         this.updateFinalBoss(e, dt);
+      } else if (e.type === "boss" && !e.final && e.entered) {
+        this.updateSectorBoss(e, dt);
       }
 
       if (e.fireRate > 0 && e.y > 20 && e.y < H - 80 && e.charging <= 0 && !e.laserState) {
@@ -913,16 +1003,15 @@ export class Game {
     }
 
     if (e.spawnCd <= 0 && e.charging <= 0) {
-      // Smaller mob escorts — first wave after 5s, then every 6s
-      const n = e.bossPhase >= 3 ? 2 : 1;
-      for (let i = 0; i < n; i++) {
-        const type = Math.random() > 0.45 ? "dart" : "scout";
+      // Three mini escorts on a fixed 4s cadence
+      for (let i = 0; i < 3; i++) {
+        const type = Math.random() > 0.4 ? "dart" : "scout";
         this.pendingSpawns.push(
-          spawnEnemy(type, e.x + (i - (n - 1) / 2) * 44, e.y + 30, this.level)
+          spawnEnemy(type, e.x + (i - 1) * 48, e.y + 28, this.level)
         );
       }
       this.flashMessage("COMMANDER DEPLOYS ESCORTS", 1);
-      e.spawnCd = 6;
+      e.spawnCd = 4;
       this.audio.alert();
     }
 
@@ -943,23 +1032,23 @@ export class Game {
 
   startBossLaser(e) {
     e.laserState = "telegraph";
-    e.laserT = e.bossPhase === 3 ? 0.75 : 0.95;
+    e.laserT = 10; // 10s charge / telegraph
     e.laserAimX = this.player.x;
-    e.laserHalfW = e.bossPhase === 3 ? 24 : e.bossPhase === 2 ? 20 : 16;
+    e.laserHalfW = e.bossPhase === 3 ? 28 : e.bossPhase === 2 ? 24 : 20;
     e.laserHitCd = 0;
-    this.flashMessage("LASER LOCK", 0.85);
+    this.flashMessage("LASER CHARGING", 1.2);
     this.audio.alert();
     addTrauma(this.juice, 0.08);
   }
 
   updateBossLaser(e, dt) {
     e.laserT -= dt;
-    const track = e.laserState === "telegraph" ? 2.8 : 0.55;
+    const track = e.laserState === "telegraph" ? 1.15 : 0.35;
     e.laserAimX += (this.player.x - e.laserAimX) * Math.min(1, track * dt);
     e.laserAimX = clamp(e.laserAimX, 40, W - 40);
 
     if (e.laserState === "telegraph") {
-      if (Math.random() < 0.55) {
+      if (Math.random() < 0.4) {
         spawnBurst(this.particles, e.laserAimX + (Math.random() - 0.5) * e.laserHalfW, e.y + e.h * 0.4, {
           count: 1,
           speed: 50,
@@ -974,11 +1063,11 @@ export class Game {
       }
       if (e.laserT <= 0) {
         e.laserState = "fire";
-        e.laserT = e.bossPhase === 3 ? 0.9 : e.bossPhase === 2 ? 0.7 : 0.55;
-        this.flashMessage("BEAM FIRE", 0.55);
-        addTrauma(this.juice, 0.22);
-        hitStop(this.juice, 0.05);
-        impactFlash(this.juice, "rgba(255,120,40,0.18)", 0.12, 0.45);
+        e.laserT = 2; // beam lasts 2 seconds
+        this.flashMessage("BEAM FIRE", 0.7);
+        addTrauma(this.juice, 0.28);
+        hitStop(this.juice, 0.06);
+        impactFlash(this.juice, "rgba(255,120,40,0.2)", 0.14, 0.5);
         this.audio.alert();
       }
       return;
@@ -1012,10 +1101,42 @@ export class Game {
       }
       if (e.laserT <= 0) {
         e.laserState = null;
-        e.laserCd = e.bossPhase === 1 ? 7.2 : e.bossPhase === 2 ? 5.6 : 4.0;
+        e.laserCd = 8; // next lock after cooldown
         e.specialCd = Math.max(e.specialCd, 0.8);
       }
     }
+  }
+
+  updateSectorBoss(e, dt) {
+    const ratio = e.hp / e.maxHp;
+    e.bossPhase = ratio > 0.66 ? 1 : ratio > 0.33 ? 2 : 3;
+    e.specialCd -= dt;
+    e.chargeCd -= dt;
+
+    if (e.specialCd <= 0 && e.charging <= 0) {
+      this.sectorBossSpecial(e);
+      e.specialCd = e.bossPhase === 1 ? 3.2 : e.bossPhase === 2 ? 2.6 : 2.0;
+    }
+
+    if (e.chargeCd <= 0 && e.bossPhase >= 2 && e.charging <= 0 && (e.sectorLevel || 1) >= 2) {
+      const ang = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+      e.charging = 0.7;
+      e.chargeVx = Math.cos(ang) * (340 + e.bossPhase * 40);
+      e.chargeVy = Math.sin(ang) * (340 + e.bossPhase * 40);
+      e.chargeCd = e.bossPhase === 3 ? 4.2 : 5.5;
+      this.flashMessage("SECTOR CHARGE", 0.7);
+    }
+  }
+
+  sectorBossSpecial(e) {
+    const phase = e.bossPhase || 1;
+    e.attackIndex = (e.attackIndex || 0) + 1;
+    const kinds = phase >= 3 ? ["ring", "sweep", "sides", "fan"] : phase >= 2 ? ["ring", "sweep", "fan"] : ["fan", "ring"];
+    const kind = kinds[e.attackIndex % kinds.length];
+    if (kind === "ring") this.finalBossRing(e, 6 + phase);
+    else if (kind === "sweep") this.finalBossSweep(e);
+    else if (kind === "sides") this.finalBossSides(e);
+    else this.finalBossFan(e);
   }
 
   finalBossSpecial(e) {
@@ -1159,7 +1280,7 @@ export class Game {
       }
       e.phase += dt;
 
-      if (e.final && e.charging > 0) {
+      if (e.charging > 0) {
         e.charging -= dt;
         e.x += e.chargeVx * dt;
         e.y += e.chargeVy * dt;
@@ -1525,7 +1646,14 @@ export class Game {
   }
 
   defeatBoss() {
-    if (this.levelPhase === "clear" || this.levelPhase === "victory") return;
+    if (
+      this.levelPhase === "clear" ||
+      this.levelPhase === "victory" ||
+      this.levelPhase === "victoryBanner" ||
+      this.state === STATES.UPGRADE
+    ) {
+      return;
+    }
     this.score += 1000 * this.level;
     this.burst(W / 2, 160, this.level >= MAX_LEVEL ? "#ffb020" : "#3ef0d0", 60, 360);
     this.audio.explosion(true);
@@ -1533,24 +1661,58 @@ export class Game {
     this.enemies = this.enemies.filter((e) => e.type !== "boss");
 
     if (this.level >= MAX_LEVEL) {
-      this.levelPhase = "victory";
-      this.clearTimer = 1.2;
-      this.state = STATES.LEVEL_CLEAR;
-      this.ui.levelClearTitle.textContent = "Final Boss Destroyed";
-      this.ui.levelClearSub.textContent = "Freighter path is clear…";
-      this.showScreen("levelclear");
+      this.levelPhase = "victoryBanner";
+      this.clearTimer = 3.2;
+      this.victoryBannerT = 0;
+      this.state = STATES.VICTORY_BANNER;
+      this.showScreen("victorybanner");
+      this.flashMessage("VICTORY", 2.8);
+      addTrauma(this.juice, 0.4);
+      impactFlash(this.juice, "rgba(255,200,80,0.28)", 0.28, 0.55);
       return;
     }
 
     this.levelPhase = "clear";
-    this.clearTimer = 2.4;
+    this.clearTimer = 1.6;
     this.state = STATES.LEVEL_CLEAR;
     this.ui.levelClearTitle.textContent = `Sector ${this.level} Cleared`;
-    this.ui.levelClearSub.textContent =
-      this.level === MAX_LEVEL - 1
-        ? "Final sector inbound"
-        : "Ammo restocked · Next sector inbound";
+    this.ui.levelClearSub.textContent = "Ship level-up inbound…";
     this.showScreen("levelclear");
+  }
+
+  openUpgradeSelect() {
+    if (this.state === STATES.UPGRADE) return;
+    const taken = this.player?.upgrades?.taken || [];
+    this.upgradeOptions = pickUpgradeChoices(taken, 3);
+    this.state = STATES.UPGRADE;
+    this.levelPhase = "upgrade";
+    if (this.ui.upgradeLevel) {
+      this.ui.upgradeLevel.textContent = String((this.player.shipLevel || 1) + 1);
+    }
+    if (this.ui.upgradeChoices) {
+      this.ui.upgradeChoices.innerHTML = this.upgradeOptions
+        .map(
+          (u) => `
+        <button type="button" class="upgrade-card" data-upgrade="${u.id}">
+          <span class="upgrade-card-title">${u.title}</span>
+          <span class="upgrade-card-desc">${u.desc}</span>
+        </button>`
+        )
+        .join("");
+    }
+    this.showScreen("upgrade");
+    this.audio.alert();
+  }
+
+  chooseUpgrade(id) {
+    if (this.state !== STATES.UPGRADE) return;
+    const valid = (this.upgradeOptions || []).some((u) => u.id === id) || UPGRADE_POOL.some((u) => u.id === id);
+    if (!valid) return;
+    applyUpgrade(this.player, id);
+    const label = UPGRADE_POOL.find((u) => u.id === id)?.title || "UPGRADE";
+    this.flashMessage(`SHIP LV ${this.player.shipLevel} — ${label}`, 1.6);
+    this.audio.pickup("super");
+    this.nextLevel();
   }
 
   collectPowerup(up) {
@@ -1685,12 +1847,13 @@ export class Game {
     if ((this.laserCharge || 0) < 100) return;
     if (this.superLaser) return;
     this.laserCharge = 0;
+    const up = this.player.upgrades || {};
     this.superLaser = {
       t: 0.65,
       tick: 0,
       x: this.player.x,
-      halfW: 28,
-      damage: 55,
+      halfW: 28 * (up.laserWidthMul || 1),
+      damage: 55 * (up.laserDamageMul || 1),
     };
     hitStop(this.juice, 0.08);
     impactFlash(this.juice, "rgba(255,79,216,0.24)", 0.24, 0.4);
@@ -1756,6 +1919,7 @@ export class Game {
     this.ui.lives.textContent = String(Math.max(0, this.lives));
     this.ui.shield.style.transform = `scaleX(${clamp(p.shield / 100, 0, 1)})`;
     this.ui.hull.style.transform = `scaleX(${clamp(p.hull / 100, 0, 1)})`;
+    if (this.ui.shipLevel) this.ui.shipLevel.textContent = String(p.shipLevel || 1);
     if (this.ui.laser) {
       this.ui.laser.style.transform = `scaleX(${clamp((this.laserCharge || 0) / 100, 0, 1)})`;
     }
@@ -1860,6 +2024,29 @@ export class Game {
       ctx.font = "700 18px Orbitron";
       ctx.textAlign = "center";
       ctx.fillText(this.message.text, W / 2, H * 0.38 + 28);
+      ctx.restore();
+    }
+
+    if (this.state === STATES.VICTORY_BANNER) {
+      const t = this.victoryBannerT || 0;
+      const pulse = 0.85 + Math.sin(t * 6) * 0.08;
+      const fade = clamp(this.clearTimer / 0.45, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = 0.55 * fade;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = fade;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(232, 162, 74, 0.95)";
+      ctx.font = `800 ${Math.floor(72 * pulse)}px Orbitron, sans-serif`;
+      ctx.fillText("VICTORY", W / 2, H * 0.42);
+      ctx.fillStyle = "rgba(238, 244, 255, 0.92)";
+      ctx.font = "700 22px Rajdhani, sans-serif";
+      ctx.fillText("BLOCKADE COMMANDER DESTROYED", W / 2, H * 0.42 + 64);
+      ctx.fillStyle = "rgba(158, 179, 209, 0.9)";
+      ctx.font = "600 16px Rajdhani, sans-serif";
+      ctx.fillText("Freighter path clear — standing by…", W / 2, H * 0.42 + 96);
       ctx.restore();
     }
 
