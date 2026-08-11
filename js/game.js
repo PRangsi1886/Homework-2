@@ -677,6 +677,7 @@ export class Game {
     }
     this.level += 1;
     this.ui.levelclear.classList.add("hidden");
+    if (this.ui.upgrade) this.ui.upgrade.classList.add("hidden");
     this.player.invuln = 1.5;
     this.player.shield = Math.min(100, this.player.shield + 25);
     this.player.ammo.ion += 12;
