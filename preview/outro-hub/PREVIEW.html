@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Preview — Outro Cinematic + Board Hub Callback</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg0: #070b14;
+      --bg1: #10182a;
+      --ink: #eef2f8;
+      --muted: #9eb3d1;
+      --accent: #e8a24a;
+      --good: #3ef0d0;
+      --warn: #ff5a6e;
+      --line: rgba(158, 179, 209, 0.22);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Rajdhani, sans-serif;
+      background:
+        radial-gradient(1000px 500px at 20% -10%, #1a2744 0%, transparent 55%),
+        radial-gradient(800px 420px at 90% 10%, #2a1a12 0%, transparent 45%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    .eyebrow {
+      font-family: Orbitron, sans-serif;
+      letter-spacing: 0.18em;
+      font-size: 11px;
+      color: var(--accent);
+      margin: 0 0 8px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: Orbitron, sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      margin: 0 0 8px;
+      font-weight: 800;
+    }
+    .lede {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 62ch;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(4, 8, 16, 0.72);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .panel-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-family: Orbitron, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .badge {
+      color: var(--good);
+      border: 1px solid rgba(62, 240, 208, 0.35);
+      padding: 3px 8px;
+      font-size: 10px;
+    }
+    .stage {
+      position: relative;
+      aspect-ratio: 720 / 960;
+      max-height: 640px;
+      margin: 0 auto;
+      background: #000;
+      overflow: hidden;
+    }
+    .stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #010308;
+    }
+    .letterbox {
+      position: absolute;
+      left: 0; right: 0;
+      height: 9%;
+      background: #010308;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .letterbox.top { top: 0; }
+    .letterbox.bot { bottom: 0; }
+    .pips {
+      position: absolute;
+      top: 4.2%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 3;
+    }
+    .pip {
+      width: 28px;
+      height: 3px;
+      background: rgba(158,179,209,0.28);
+    }
+    .pip.on { background: rgba(232,162,74,0.95); }
+    .sub {
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      bottom: 12%;
+      z-index: 3;
+      background: rgba(1, 3, 8, 0.78);
+      border: 1px solid rgba(232, 162, 74, 0.4);
+      padding: 12px 14px 14px;
+    }
+    .speaker {
+      font-family: Orbitron, sans-serif;
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .line {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.35;
+      text-align: center;
+    }
+    .skip {
+      position: absolute;
+      right: 4%;
+      bottom: 3.2%;
+      z-index: 3;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--line);
+    }
+    button {
+      font-family: Orbitron, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      background: rgba(20, 30, 48, 0.9);
+      color: var(--ink);
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: linear-gradient(180deg, #f0b45a, #c07828);
+      color: #1a1008;
+      border-color: transparent;
+      font-weight: 700;
+    }
+    button:hover { filter: brightness(1.08); }
+    .hub {
+      padding: 14px;
+    }
+    .hub p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+    .flow {
+      display: grid;
+      gap: 8px;
+      margin: 0 0 14px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
+    }
+    .n {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(232,162,74,0.45);
+      color: var(--accent);
+      font-family: Orbitron, sans-serif;
+      font-size: 11px;
+    }
+    .step strong {
+      display: block;
+      font-family: Orbitron, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .step span { color: var(--muted); font-size: 0.95rem; }
+    pre {
+      margin: 0 0 14px;
+      padding: 12px;
+      overflow: auto;
+      background: #05080f;
+      border: 1px solid var(--line);
+      color: #c9f7ea;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .mock-board {
+      border: 1px dashed rgba(62, 240, 208, 0.35);
+      padding: 12px;
+      background: rgba(62, 240, 208, 0.04);
+    }
+    .mock-board h3 {
+      margin: 0 0 8px;
+      font-family: Orbitron, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--good);
+    }
+    .log {
+      min-height: 72px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: #b7c7dd;
+      white-space: pre-wrap;
+    }
+    .victory-cta {
+      position: absolute;
+      inset: auto 8% 18% 8%;
+      z-index: 4;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .victory-cta.show { opacity: 1; pointer-events: auto; }
+    .victory-cta h2 {
+      font-family: Orbitron, sans-serif;
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+    }
+    .victory-cta p { margin: 0 0 12px; color: var(--muted); }
+    .cta-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .section {
+      margin-top: 28px;
+    }
+    .balance {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .balance { grid-template-columns: 1fr; }
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(4, 8, 16, 0.72);
+      padding: 14px;
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-family: Orbitron, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+    .card ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--muted);
+    }
+    .card li { margin: 0 0 6px; }
+    .card .val { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Proposal preview · not shipped yet</p>
+    <h1>Outro cinematic + Board hub callback</h1>
+    <p class="lede">
+      Interactive mock of the proposed Act 1 ending: a short VO/subtitle outro after the final boss,
+      then a victory panel with <strong>Return to Board</strong> that posts a completion message to the Board of Realities parent frame.
+    </p>
+
+    <div class="grid">
+      <section class="panel" aria-label="Outro cinematic preview">
+        <div class="panel-h">
+          <span>Outro cinematic</span>
+          <span class="badge">Mock · 4 beats</span>
+        </div>
+        <div class="stage" id="stage">
+          <div class="letterbox top"></div>
+          <div class="letterbox bot"></div>
+          <div class="pips" id="pips"></div>
+          <img id="still" alt="Outro beat still" src="../../assets/cutscenes/opening/05-launch.jpg" />
+          <div class="sub">
+            <div class="speaker" id="speaker">OPS</div>
+            <p class="line" id="line">All systems ready. Prepare for takeoff.</p>
+          </div>
+          <div class="skip">CLICK / SPACE TO SKIP</div>
+          <div class="victory-cta" id="victoryCta">
+            <h2>Mission Complete</h2>
+            <p>Agent Zlisto clears the blockade · Score <strong>18420</strong></p>
+            <div class="cta-row">
+              <button class="primary" id="btnReturn">Return to Board</button>
+              <button id="btnReplay">Play Again</button>
+            </div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="primary" id="btnPlay">Play outro</button>
+          <button id="btnPrev">Prev beat</button>
+          <button id="btnNext">Next beat</button>
+          <button id="btnSkip">Skip to victory</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Board hub callback preview">
+        <div class="panel-h">
+          <span>Board hub callback</span>
+          <span class="badge">postMessage</span>
+        </div>
+        <div class="hub">
+          <p>
+            When embedded as an iframe in Board of Realities, victory would notify the parent hub
+            so the board can unlock the next node / store score — instead of only “Play Again”.
+          </p>
+          <div class="flow">
+            <div class="step">
+              <div class="n">1</div>
+              <div>
+                <strong>Final boss dies</strong>
+                <span>Game enters outro cutscene (new), then victory UI.</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="n">2</div>
+              <div>
+                <strong>Player hits Return to Board</strong>
+                <span>Button sits beside Play Again on the victory screen.</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="n">3</div>
+              <div>
+                <strong>postMessage to parent</strong>
+                <span>Hub receives a typed completion payload and routes the player back.</span>
+              </div>
+            </div>
+          </div>
+
+          <pre id="payload">{
+  "type": "board-of-realities/minigame-complete",
+  "gameId": "capital-syndicate",
+  "result": "victory",
+  "score": 18420,
+  "sector": 4,
+  "version": "act1"
+}</pre>
+
+          <div class="mock-board">
+            <h3>Mock hub listener</h3>
+            <div class="log" id="hubLog">Waiting for Return to Board…</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="section">
+      <p class="eyebrow">Gameplay / balance</p>
+      <h1>What to tune next</h1>
+      <p class="lede">Concrete balance notes from the current numbers in <code>js/entities.js</code> / combat loop — not generic advice.</p>
+      <div class="balance">
+        <article class="card">
+          <h3>Weapon DPS skew</h3>
+          <ul>
+            <li><span class="val">Plasma</span> is currently the runaway pick: <span class="val">40 dmg / 0.08s ≈ 500 DPS</span> vs gun ≈ 120 DPS and ion ≈ 175 DPS.</li>
+            <li>Suggestion: drop plasma to ~22–26 dmg <em>or</em> slow rate to ~0.14, keep it as a close-range shredder.</li>
+            <li>Rockets (95 + splash 55) are fine as limited burst — maybe start with <span class="val">6–8</span> instead of 10 so they stay special.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Difficulty curve</h3>
+          <ul>
+            <li>Enemy HP only scales <span class="val">+8%/sector</span>; fire rate gets faster — late game feels bullet-hell dense more than tanky.</li>
+            <li>Final boss: <span class="val">5200 HP</span>, fireRate <span class="val">0.22</span> — hard spike vs mid bosses (~1180–1740 HP).</li>
+            <li>Suggestion: add a short calm after sector clear, or give +15 shield on sector enter; soften final phase-1 pattern before escorts.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Systems that fight the fantasy</h3>
+          <ul>
+            <li><span class="val">Self-destruct</span> deletes the sky and chips the boss for 260 — strong “panic win.” Cap once/sector or remove boss chunk.</li>
+            <li><span class="val">Super laser</span> snowballs from kills — great fantasy, but can erase authored tension. Gate charge gain in boss rooms.</li>
+            <li>Polarity (black/white) is cosmetic only — either wire match rules or stop implying Chromium-style color play.</li>
+            <li>Pass-up powerups for score is clever; surface it in HUD (“LET PASS +500”) so players learn it.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const BEATS = [
+      {
+        src: "../../assets/cutscenes/opening/05-launch.jpg",
+        speaker: "OPS",
+        line: "Commander signature collapsing. Blockade lattice is breaking apart.",
+      },
+      {
+        src: "../../assets/cutscenes/opening/03-lisa-captured.jpg",
+        speaker: "COMMAND",
+        line: "Princess Lisa’s beacon is clear — she’s free. Get her freighter out of the kill zone.",
+      },
+      {
+        src: "../../assets/cutscenes/opening/04-board-fighter.jpg",
+        speaker: "ZLISTO",
+        line: "Told you I got this. Capital Syndicate — Operation Ferrum Wings: complete.",
+      },
+      {
+        src: "../../assets/victory/zlisto-cheer.png",
+        speaker: "OPS",
+        line: "Mission complete. Returning control to the Board of Realities.",
+        victory: true,
+      },
+    ];
+
+    const still = document.getElementById("still");
+    const speaker = document.getElementById("speaker");
+    const line = document.getElementById("line");
+    const pips = document.getElementById("pips");
+    const victoryCta = document.getElementById("victoryCta");
+    const hubLog = document.getElementById("hubLog");
+    const payload = document.getElementById("payload");
+
+    let i = 0;
+    let timer = null;
+
+    function render() {
+      const b = BEATS[i];
+      still.src = b.src;
+      speaker.textContent = b.speaker;
+      line.textContent = b.line;
+      pips.innerHTML = BEATS.map((_, n) => `<div class="pip ${n <= i ? "on" : ""}"></div>`).join("");
+      victoryCta.classList.toggle("show", !!b.victory);
+    }
+
+    function stopAuto() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    function next() {
+      i = Math.min(BEATS.length - 1, i + 1);
+      render();
+      if (BEATS[i].victory) stopAuto();
+    }
+
+    function prev() {
+      i = Math.max(0, i - 1);
+      render();
+    }
+
+    function play() {
+      stopAuto();
+      i = 0;
+      render();
+      timer = setInterval(() => {
+        if (i >= BEATS.length - 1) {
+          stopAuto();
+          return;
+        }
+        next();
+      }, 2800);
+    }
+
+    function skip() {
+      stopAuto();
+      i = BEATS.length - 1;
+      render();
+    }
+
+    function returnToBoard() {
+      const msg = {
+        type: "board-of-realities/minigame-complete",
+        gameId: "capital-syndicate",
+        result: "victory",
+        score: 18420,
+        sector: 4,
+        version: "act1",
+      };
+      payload.textContent = JSON.stringify(msg, null, 2);
+      // Demo: also attempt real postMessage if embedded
+      try {
+        window.parent.postMessage(msg, "*");
+      } catch (_) {}
+      const ts = new Date().toLocaleTimeString();
+      hubLog.textContent =
+        `[${ts}] hub received completion\n` +
+        `→ unlock next board node\n` +
+        `→ save score ${msg.score}\n` +
+        `→ route player back to Board of Realities`;
+    }
+
+    document.getElementById("btnPlay").onclick = play;
+    document.getElementById("btnNext").onclick = () => { stopAuto(); next(); };
+    document.getElementById("btnPrev").onclick = () => { stopAuto(); prev(); };
+    document.getElementById("btnSkip").onclick = skip;
+    document.getElementById("btnReturn").onclick = returnToBoard;
+    document.getElementById("btnReplay").onclick = play;
+    document.getElementById("stage").addEventListener("click", () => {
+      if (BEATS[i].victory) return;
+      stopAuto();
+      next();
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (BEATS[i].victory) returnToBoard();
+        else { stopAuto(); next(); }
+      }
+    });
+
+    // Listen to our own postMessage when not in iframe (loopback for demo)
+    window.addEventListener("message", (ev) => {
+      if (!ev.data || ev.data.type !== "board-of-realities/minigame-complete") return;
+      // already logged in returnToBoard; keep idempotent
+    });
+
+    render();
+  </script>
+</body>
+</html>
