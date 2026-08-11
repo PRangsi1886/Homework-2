@@ -107,9 +107,6 @@ public final class CourseRenderer {
         g.drawPolygon(xs, ys, 4);
 
         // side face for depth
-        int[] sx = {xs[2], xs[3], xs[3], xs[2]};
-        int[] sy = {ys[2], ys[3], ys[3] + 14, ys[2] + 14};
-        // recompute bottom edge with lower Y
         double[] a = project(x1, z1, tx, tz, -0.55);
         double[] b = project(x0, z1, tx, tz, -0.55);
         int[] screenA = toScreen(a[0], a[1], a[2], w, h);
