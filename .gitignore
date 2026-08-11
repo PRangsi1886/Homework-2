@@ -28,3 +28,8 @@ output/
 *.log
 .playwright/
 dist/
+
+# Neverball Java build
+neverball-packages/bin/
+*.class
+
