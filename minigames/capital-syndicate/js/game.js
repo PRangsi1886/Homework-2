@@ -1968,11 +1968,25 @@ export class Game {
     if (beam.t <= 0) this.superLaser = null;
   }
 
+  renderLivesHud() {
+    const el = this.ui.lives;
+    if (!el) return;
+    const n = Math.max(0, this.lives | 0);
+    // Always show at least 3 heart slots so starting lives are obvious.
+    const slots = Math.max(3, n);
+    let html = "";
+    for (let i = 0; i < slots; i++) {
+      html += `<i class="heart${i < n ? " on" : ""}" aria-hidden="true"></i>`;
+    }
+    el.innerHTML = html;
+    el.setAttribute("aria-label", `Lives: ${n}`);
+  }
+
   syncHud() {
     const p = this.player;
     this.ui.score.textContent = String(this.score);
     this.ui.level.textContent = `${this.level} / ${MAX_LEVEL}`;
-    this.ui.lives.textContent = String(Math.max(0, this.lives));
+    this.ui.lives && this.renderLivesHud();
     this.ui.shield.style.transform = `scaleX(${clamp(p.shield / 100, 0, 1)})`;
     this.ui.hull.style.transform = `scaleX(${clamp(p.hull / 100, 0, 1)})`;
     if (this.ui.shipLevel) this.ui.shipLevel.textContent = String(p.shipLevel || 1);

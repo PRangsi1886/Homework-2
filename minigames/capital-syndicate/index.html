@@ -24,7 +24,10 @@
           <div class="hud-row"><span>SHIP LV</span><strong id="hud-ship-level">1</strong></div>
         </div>
         <div class="hud-right">
-          <div class="hud-row"><span>FIGHTERS</span><strong id="hud-lives">3</strong></div>
+          <div class="hud-row lives-row">
+            <span>LIVES</span>
+            <div id="hud-lives" class="lives-hearts" aria-label="Lives: 3"></div>
+          </div>
           <div class="meter">
             <label>SHIELD</label>
             <div class="bar"><i id="bar-shield"></i></div>
@@ -144,6 +147,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=boss-laser-fire-1"></script>
+    <script type="module" src="js/main.js?v=lives-hearts-1"></script>
   </body>
 </html>

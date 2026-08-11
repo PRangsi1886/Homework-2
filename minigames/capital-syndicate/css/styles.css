@@ -123,6 +123,63 @@ body::before {
   min-width: 150px;
 }
 
+.lives-row {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lives-hearts {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 16px;
+}
+
+.lives-hearts .heart {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  position: relative;
+  background: transparent;
+  border: 0;
+  opacity: 0.28;
+  filter: grayscale(0.2);
+}
+
+.lives-hearts .heart::before,
+.lives-hearts .heart::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  background: #9eb3d1;
+  border-radius: 8px 8px 0 0;
+  top: 0;
+}
+
+.lives-hearts .heart::before {
+  left: 0;
+  transform: rotate(-45deg);
+  transform-origin: bottom right;
+}
+
+.lives-hearts .heart::after {
+  right: 0;
+  transform: rotate(45deg);
+  transform-origin: bottom left;
+}
+
+.lives-hearts .heart.on {
+  opacity: 1;
+  filter: none;
+}
+
+.lives-hearts .heart.on::before,
+.lives-hearts .heart.on::after {
+  background: #ff5a6e;
+  box-shadow: 0 0 8px rgba(255, 90, 110, 0.45);
+}
+
 .meter {
   margin-top: 6px;
 }
