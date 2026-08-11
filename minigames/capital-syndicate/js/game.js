@@ -291,6 +291,7 @@ export class Game {
     this.combo = 0;
     this.laserCharge = 0;
     this.superLaser = null;
+    this.bossLaser = null;
     this.killShakeScale = 1;
     this.selfDestructUsed = false;
     this.selfDestructArmed = 0;
@@ -496,6 +497,7 @@ export class Game {
     this.enemyBullets = [];
     this.powerups = [];
     this.boss = null;
+    this.bossLaser = null;
     this.waveIndex = 0;
     this.waveTimer = 1.2;
     this.spawnQueue = [];
@@ -677,6 +679,7 @@ export class Game {
     }
     this.level += 1;
     this.ui.levelclear.classList.add("hidden");
+    if (this.ui.upgrade) this.ui.upgrade.classList.add("hidden");
     this.player.invuln = 1.5;
     this.player.shield = Math.min(100, this.player.shield + 25);
     this.player.ammo.ion += 12;
@@ -992,18 +995,8 @@ export class Game {
     e.chargeCd -= dt;
     e.laserCd -= dt;
 
-    if (e.laserState) {
-      this.updateBossLaser(e, dt);
-      return;
-    }
-
-    if (e.specialCd <= 0 && e.charging <= 0) {
-      this.finalBossSpecial(e);
-      e.specialCd = e.bossPhase === 1 ? 3.8 : e.bossPhase === 2 ? 3.0 : 2.3;
-    }
-
-    if (e.spawnCd <= 0 && e.charging <= 0) {
-      // Three mini escorts on a fixed 4s cadence
+    // Escorts keep spawning even during laser charge/fire
+    if (e.spawnCd <= 0) {
       for (let i = 0; i < 3; i++) {
         const type = Math.random() > 0.4 ? "dart" : "scout";
         this.pendingSpawns.push(
@@ -1013,6 +1006,16 @@ export class Game {
       this.flashMessage("COMMANDER DEPLOYS ESCORTS", 1);
       e.spawnCd = 4;
       this.audio.alert();
+    }
+
+    if (e.laserState) {
+      this.updateBossLaser(e, dt);
+      return;
+    }
+
+    if (e.specialCd <= 0 && e.charging <= 0) {
+      this.finalBossSpecial(e);
+      e.specialCd = e.bossPhase === 1 ? 3.8 : e.bossPhase === 2 ? 3.0 : 2.3;
     }
 
     if (e.laserCd <= 0 && e.charging <= 0) {
@@ -1034,8 +1037,16 @@ export class Game {
     e.laserState = "telegraph";
     e.laserT = 10; // 10s charge / telegraph
     e.laserAimX = this.player.x;
-    e.laserHalfW = e.bossPhase === 3 ? 28 : e.bossPhase === 2 ? 24 : 20;
+    e.laserHalfW = e.bossPhase === 3 ? 30 : e.bossPhase === 2 ? 26 : 22;
     e.laserHitCd = 0;
+    e.laserFireEmitted = false;
+    this.bossLaser = {
+      owner: e,
+      state: "telegraph",
+      t: 10,
+      aimX: e.laserAimX,
+      halfW: e.laserHalfW,
+    };
     this.flashMessage("LASER CHARGING", 1.2);
     this.audio.alert();
     addTrauma(this.juice, 0.08);
@@ -1043,12 +1054,22 @@ export class Game {
 
   updateBossLaser(e, dt) {
     e.laserT -= dt;
-    const track = e.laserState === "telegraph" ? 1.15 : 0.35;
+    if (this.bossLaser && this.bossLaser.owner === e) {
+      this.bossLaser.t = e.laserT;
+      this.bossLaser.state = e.laserState;
+    }
+
+    // Track more during charge; lock harder once firing
+    const track = e.laserState === "telegraph" ? 1.35 : 0.2;
     e.laserAimX += (this.player.x - e.laserAimX) * Math.min(1, track * dt);
     e.laserAimX = clamp(e.laserAimX, 40, W - 40);
+    if (this.bossLaser && this.bossLaser.owner === e) {
+      this.bossLaser.aimX = e.laserAimX;
+      this.bossLaser.halfW = e.laserHalfW;
+    }
 
     if (e.laserState === "telegraph") {
-      if (Math.random() < 0.4) {
+      if (Math.random() < 0.45) {
         spawnBurst(this.particles, e.laserAimX + (Math.random() - 0.5) * e.laserHalfW, e.y + e.h * 0.4, {
           count: 1,
           speed: 50,
@@ -1064,36 +1085,36 @@ export class Game {
       if (e.laserT <= 0) {
         e.laserState = "fire";
         e.laserT = 2; // beam lasts 2 seconds
-        this.flashMessage("BEAM FIRE", 0.7);
-        addTrauma(this.juice, 0.28);
-        hitStop(this.juice, 0.06);
-        impactFlash(this.juice, "rgba(255,120,40,0.2)", 0.14, 0.5);
+        e.laserHitCd = 0;
+        e.laserFireEmitted = true;
+        if (this.bossLaser && this.bossLaser.owner === e) {
+          this.bossLaser.state = "fire";
+          this.bossLaser.t = 2;
+        }
+        this.flashMessage("BEAM FIRE", 0.9);
+        addTrauma(this.juice, 0.35);
+        impactFlash(this.juice, "rgba(255,120,40,0.28)", 0.18, 0.55);
+        this.shake = Math.max(this.shake, 12);
         this.audio.alert();
+        this.audio.explosion(false);
+        // Immediate opening blast so fire is unmistakable
+        this.emitBossLaserBolts(e, true);
       }
       return;
     }
 
     if (e.laserState === "fire") {
       e.laserHitCd -= dt;
-      const p = this.player;
-      if (
-        p.alive &&
-        p.y > e.y &&
-        Math.abs(p.x - e.laserAimX) < e.laserHalfW + p.w * 0.35
-      ) {
-        if (e.laserHitCd <= 0) {
-          this.damagePlayer(e.bossPhase >= 3 ? 14 : 11);
-          e.laserHitCd = 0.11;
-          spawnSparks(this.particles, p.x, p.y, 6);
-        }
-      }
-      if (Math.random() < 0.8) {
+      this.applyBossLaserDamage(e);
+      // Continuous damaging bolts down the beam corridor
+      this.emitBossLaserBolts(e, false);
+      if (Math.random() < 0.9) {
         spawnBurst(this.particles, e.laserAimX + (Math.random() - 0.5) * e.laserHalfW * 1.4, e.y + 40 + Math.random() * (H - e.y - 60), {
-          count: 1,
-          speed: 40,
-          colors: ["#ff4a20", "#ffb040", "#fff2c0"],
-          life: 0.18,
-          size: 2.6,
+          count: 2,
+          speed: 50,
+          colors: ["#ff4a20", "#ffb040", "#fff2c0", "#ffffff"],
+          life: 0.22,
+          size: 3.2,
           glow: true,
           gravity: 0,
           spread: Math.PI * 2,
@@ -1101,9 +1122,44 @@ export class Game {
       }
       if (e.laserT <= 0) {
         e.laserState = null;
-        e.laserCd = 8; // next lock after cooldown
+        e.laserCd = 8;
         e.specialCd = Math.max(e.specialCd, 0.8);
+        if (this.bossLaser && this.bossLaser.owner === e) this.bossLaser = null;
       }
+    }
+  }
+
+  applyBossLaserDamage(e) {
+    const p = this.player;
+    if (!p?.alive || p.y <= e.y) return;
+    const half = (e.laserHalfW || 22) + p.w * 0.45;
+    if (Math.abs(p.x - e.laserAimX) > half) return;
+    if (e.laserHitCd > 0) return;
+    this.damagePlayer(e.bossPhase >= 3 ? 18 : 14);
+    e.laserHitCd = 0.1;
+    spawnSparks(this.particles, p.x, p.y, 8);
+    addTrauma(this.juice, 0.1);
+  }
+
+  emitBossLaserBolts(e, burst) {
+    const count = burst ? 14 : 3;
+    const half = e.laserHalfW || 22;
+    for (let i = 0; i < count; i++) {
+      const ox = (Math.random() - 0.5) * half * 1.6;
+      this.enemyBullets.push({
+        x: e.laserAimX + ox,
+        y: e.y + e.h * 0.45 + (burst ? i * 18 : Math.random() * 30),
+        w: burst ? 10 : 8,
+        h: burst ? 28 : 22,
+        vx: ox * 0.15,
+        vy: 780 + Math.random() * 120,
+        damage: 16,
+        color: i % 2 ? "#ffe08a" : "#ff4a20",
+        life: 1.2,
+        heavy: true,
+        fromFinal: true,
+        laserBolt: true,
+      });
     }
   }
 
@@ -2198,17 +2254,22 @@ export class Game {
   }
 
   drawBossLaser(ctx) {
-    const e = this.boss;
-    if (!e || !e.final || !e.laserState) return;
-    const x = e.laserAimX;
-    const top = e.y + e.h * 0.35;
+    // Prefer live final-boss laser state from enemies (authoritative), then mirror.
+    const live =
+      this.enemies.find((x) => x.type === "boss" && x.final && x.laserState) ||
+      (this.bossLaser?.owner?.laserState ? this.bossLaser.owner : null) ||
+      (this.boss?.final && this.boss?.laserState ? this.boss : null);
+    if (!live) return;
+    const x = live.laserAimX;
+    const top = live.y + live.h * 0.2;
     const bottom = H;
-    const halfW = e.laserHalfW || 18;
-    const t = this.juice?.time || 0;
+    const halfW = live.laserHalfW || 22;
+    const t = this.juice?.time || performance.now() * 0.001;
+    const firing = live.laserState === "fire";
 
     ctx.save();
-    if (e.laserState === "telegraph") {
-      const pulse = 0.35 + Math.sin(t * 22) * 0.2;
+    if (!firing) {
+      const pulse = 0.4 + Math.sin(t * 22) * 0.2;
       ctx.globalAlpha = pulse;
       ctx.strokeStyle = "rgba(255, 140, 40, 0.95)";
       ctx.lineWidth = 2;
@@ -2218,35 +2279,48 @@ export class Game {
       ctx.lineTo(x, bottom);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(255, 120, 40, 0.12)";
+      ctx.fillStyle = "rgba(255, 120, 40, 0.14)";
       ctx.fillRect(x - halfW, top, halfW * 2, bottom - top);
-      ctx.strokeStyle = "rgba(255, 200, 80, 0.55)";
+      ctx.strokeStyle = "rgba(255, 200, 80, 0.6)";
       ctx.lineWidth = 1;
       ctx.strokeRect(x - halfW, top, halfW * 2, bottom - top);
+      // Charge meter at boss
+      const charge = clamp(1 - (live.laserT || 0) / 10, 0, 1);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(x - 40, top - 18, 80, 6);
+      ctx.fillStyle = "#ffb040";
+      ctx.fillRect(x - 40, top - 18, 80 * charge, 6);
       ctx.globalAlpha = 1;
       drawGlow(ctx, x, top + 20, 40, "rgba(255,140,40,0.45)", 0.4);
-    } else if (e.laserState === "fire") {
-      const pulse = 0.7 + Math.sin(t * 36) * 0.2;
+    } else {
+      const pulse = 0.85 + Math.sin(t * 48) * 0.15;
       ctx.globalCompositeOperation = "lighter";
+      // Outer glow slab
+      ctx.globalAlpha = pulse * 0.45;
+      ctx.fillStyle = "rgba(255, 80, 20, 0.85)";
+      ctx.fillRect(x - halfW * 1.55, top, halfW * 3.1, bottom - top);
+      // Core beam
       const g = ctx.createLinearGradient(x, top, x, bottom);
-      g.addColorStop(0, "rgba(255,255,255,0.95)");
-      g.addColorStop(0.12, "rgba(255,160,40,0.9)");
-      g.addColorStop(0.55, "rgba(255,60,20,0.75)");
-      g.addColorStop(1, "rgba(255,40,10,0.2)");
+      g.addColorStop(0, "rgba(255,255,255,1)");
+      g.addColorStop(0.1, "rgba(255,220,120,0.98)");
+      g.addColorStop(0.45, "rgba(255,90,20,0.95)");
+      g.addColorStop(1, "rgba(255,40,10,0.35)");
       ctx.fillStyle = g;
       ctx.globalAlpha = pulse;
       ctx.fillRect(x - halfW, top, halfW * 2, bottom - top);
-      ctx.globalAlpha = pulse * 0.65;
-      ctx.fillRect(x - halfW * 0.35, top, halfW * 0.7, bottom - top);
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = "rgba(255,255,220,0.95)";
-      ctx.lineWidth = 2;
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillRect(x - halfW * 0.28, top, halfW * 0.56, bottom - top);
+      ctx.strokeStyle = "rgba(255,255,220,1)";
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(x, top);
       ctx.lineTo(x, bottom);
       ctx.stroke();
-      drawGlow(ctx, x, top + 30, 70, "rgba(255,100,30,0.55)", 0.55);
-      drawGlow(ctx, x, (top + bottom) / 2, 50, "rgba(255,160,40,0.35)", 0.4);
+      drawGlow(ctx, x, top + 10, 90, "rgba(255,180,60,0.75)", 0.7);
+      drawGlow(ctx, x, (top + bottom) / 2, 70, "rgba(255,80,20,0.55)", 0.55);
+      drawGlow(ctx, x, bottom - 40, 60, "rgba(255,120,40,0.4)", 0.45);
     }
     ctx.restore();
   }
