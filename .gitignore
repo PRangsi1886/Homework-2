@@ -14,13 +14,10 @@ audio/
 !assets/audio/**
 !minigames/**/assets/audio/
 !minigames/**/assets/audio/**
-!project-mini-game/**/assets/audio/
-!project-mini-game/**/assets/audio/**
 output/
 *.mp4
 !assets/**/*.mp4
 !minigames/**/*.mp4
-!project-mini-game/**/*.mp4
 !ai_grading/**
 .netlify/
 
