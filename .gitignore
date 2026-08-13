@@ -32,3 +32,6 @@ dist/
 # Tah's Board of Realities clone (pulled locally; keep README + helper script)
 board-of-realities/repo/
 board-of-realities/.tmp/
+
+# Working clone for pull/push (keep scripts + README; omit nested git checkout)
+project-mini-game/repo/
